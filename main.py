@@ -2,23 +2,43 @@
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import json
 import io
 
+import read_json
+
 app = FastAPI()
 
-@app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    # print("1. Received file:", file.filename)  # Debug print
+# Add CORS middleware to allow requests from your Firebase app
+# noinspection PyTypeChecker
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace this with your Firebase app domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+
+async def root():
+    return {
+        "status": "success",
+        "message": "Server is running correctly NEW"
+    }
+
+
+@app.post("/upload/xlsx")
+async def upload_xlsx(file: UploadFile = File(...)):
 
     if not file.filename.endswith(".xlsx"):
         return JSONResponse(status_code=400, content={"error": "Invalid file type"})
     contents = await file.read()
-    # excel_data = io.BytesIO(contents)
 
     try:
-        parsed_file = pd.read_excel(contents, sheet_name=2, header=2, index_col=0, usecols= [0] + list(range(18,37)))  # type: ignore
+        parsed_file = pd.read_excel(contents, sheet_name=2, header=2, index_col=0, usecols= [0] + list(range(19,37)))  # type: ignore
 
         validation_result = validate_excel(parsed_file, file.filename)
 
@@ -27,21 +47,30 @@ async def upload_file(file: UploadFile = File(...)):
 
         return JSONResponse(content={"message": "File processed successfully", "result": str(validation_result)})
     except Exception as e:
-        return JSONResponse(status_code=400, content={"error": f"Error processing file: {str(e)}"}
-)
+        return JSONResponse(status_code=400, content={"error": f"Error processing file: {str(e)}"})
+
+@app.post("/upload/json")
+async def upload_json(file: UploadFile = File(...)):
+    if not file.filename.endswith(".json"):
+        return JSONResponse(status_code=400, content={"error": "Invalid file type"})
+    contents = await file.read()
+    json_str = contents.decode('utf-8')
+    read_json.read_json(json_str)
+    return JSONResponse(content={"message": "File processed successfully"})
+
 
 def validate_excel(file, original_filename):
 
-    if file.columns[5] != "Digi 24.1":
+    if file.columns[4] != "Digi 24.1":
         print("Error")
         return "Error"
 
     else:
         return save_json(file, original_filename)
-
 def save_json(file, original_filename):
 
-    output_path = Path(f"ratings_data/{extract_date_from_filename(original_filename)}.json")
+    year, month = extract_year_and_month(original_filename)
+    output_path = Path(f"ratings_data/{year}/{month}/{extract_date_from_filename(original_filename)}.json")
 
     if output_path.exists(): # LOGIC HERE
         print(f"File {output_path} already exists, skipping...")
@@ -54,6 +83,11 @@ def save_json(file, original_filename):
         json.dump(json.loads(json_data), f, indent=2)
 
     return output_path
+
+def extract_year_and_month(filename):
+    filename = str(filename).split(' ')[-1].replace('.xlsx', '')
+    date_obj= datetime.strptime(filename, '%Y-%m-%d')
+    return str(date_obj.year), f"{date_obj.month:02d}"
 
 def extract_date_from_filename(filename):
     filename = str(filename).split(' ')[-1].replace('.xlsx', '')
