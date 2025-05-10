@@ -1,15 +1,7 @@
-﻿from pathlib import Path
-from datetime import datetime
-from fastapi import FastAPI, UploadFile, File, Header, Request
-from fastapi.responses import JSONResponse
+﻿from fastapi import FastAPI, UploadFile, File, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from endpoints import setup_routes
-
-import pandas as pd
-import json
-import io
-
 app = FastAPI()
 
 # Add CORS middleware to allow requests from your Firebase app
