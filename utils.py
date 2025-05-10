@@ -45,8 +45,6 @@ try:
 except Exception as e:
     logger.error(f"Firebase Storage connection test failed: {str(e)}", exc_info=True)
 
-
-
 def validate_excel(file, original_filename):
 
     if file.columns[4] != "Digi 24.1":
@@ -60,8 +58,8 @@ def validate_excel(file, original_filename):
 def create_json(file, original_filename):
     # Creates json file from xlsx & uploads to Firebase
     try:
-        year, month = extract_year_and_month(original_filename)
-        output_path = Path(f"ratings_data/{year}/{month}/{extract_date_from_filename(original_filename)}.json")
+        year, month, day = extract_date_from_file(original_filename)
+        output_path = Path(f"ratings_data/{year}/{month}/{year}-{month}-{day}.json")
 
         if output_path.exists():
             logger.info(f"File {output_path} already exists, skipping...")
@@ -75,18 +73,18 @@ def create_json(file, original_filename):
             json.dump(json.loads(json_data), f, indent=2)
 
         # Upload to Firebase Storage
-        bucket = storage.bucket()
-
-        blob_path = f"Ratings/{year}/{month}/{extract_date_from_filename(original_filename)}.json"
-        logger.info(f"Uploading to Firebase Storage: {blob_path}")
-
-        blob = bucket.blob(blob_path)
-        blob.upload_from_string(
-            json_data,
-            content_type='application/json'
-        )
-        logger.info(f"Successfully uploaded: {blob_path}")
-
+    #     bucket = storage.bucket()
+    #
+    #     blob_path = f"Ratings/{year}/{month}/{extract_date_from_filename(original_filename)}.json"
+    #     logger.info(f"Uploading to Firebase Storage: {blob_path}")
+    #
+    #     blob = bucket.blob(blob_path)
+    #     blob.upload_from_string(
+    #         json_data,
+    #         content_type='application/json'
+    #     )
+    #     logger.info(f"Successfully uploaded: {blob_path}")
+    #
     except Exception as e:
         logger.error(f"Error processing {original_filename}: {str(e)}", exc_info=True)
         raise
@@ -94,14 +92,10 @@ def create_json(file, original_filename):
     return output_path
 
 
-def extract_year_and_month(filename):
+def extract_date_from_file(filename):
     filename = str(filename).split(' ')[-1].replace('.xlsx', '')
     date_obj= datetime.strptime(filename, '%Y-%m-%d')
-    return str(date_obj.year), f"{date_obj.month:02d}, f{date_obj.day:02d}"
-
-def extract_date_from_filename(filename):
-    filename = str(filename).split(' ')[-1].replace('.xlsx', '')
-    return filename
+    return str(date_obj.year), f"{date_obj.month:02d}", f"{date_obj.day:02d}"
 
 def read_json(json_str):
     dataframe = pd.DataFrame(json.loads(json_str)['data'])
