@@ -1,4 +1,5 @@
-﻿from pathlib import Path
+﻿import json
+from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Header, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,7 +61,13 @@ def setup_routes(app: FastAPI):
         path = 'C:/Users/panas/PycharmProjects/ratings_backend/ratings_data'
         file = Path(f"{path}/{year}/{month}/{year}-{month}-{day}.json")
         if file.exists():
-            ratings_read_test(file)
+            result = ratings_read_test(file)
+            return JSONResponse(
+                content=json.loads(result),
+                status_code=200
+            )
         else:
-            print("File doesn't exist!")
-        return file
+            return JSONResponse(
+                status_code=400,
+                content={"error": "File not found"}
+            )
