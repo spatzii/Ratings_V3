@@ -3,6 +3,7 @@ import json
 
 from utils import read_json
 
+
 def ratings_read_test(file):
     jds = read_json(file)
     resampled_data = jds.loc['2025-05-07 20:00':'2025-05-07 22:59',
@@ -12,16 +13,15 @@ def ratings_read_test(file):
 
     resampled_dict = {}
     for column in resampled_data.columns:
-        resampled_dict[column] = {index.strftime('%Y-%m-%d %H:%M:%S'): value
-                                  for index, value in resampled_data[column].items()}
+        # Create dictionary for each column including both resampled and mean data
+        column_data = {index.strftime('%Y-%m-%d %H:%M:%S'): value
+                      for index, value in resampled_data[column].items()}
+        # Add mean value as the last entry with a special timestamp
+        column_data['Medie'] = mean_data[column]
+        resampled_dict[column] = column_data
 
-    result = {
-        "resampled_data": resampled_dict,
-        "mean_data": mean_data.to_dict()
-    }
-    # print(result)
+    result = resampled_dict
     return json.dumps(result)
-
 
     # print(jds.loc['2025-05-07 20:00':'2025-05-07 22:59', ['Digi 24', 'Antena 3 CNN']].resample('15min').mean().round(2))
     # print("\n")

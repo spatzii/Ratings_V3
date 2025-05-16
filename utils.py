@@ -63,10 +63,8 @@ def validate_excel(file, original_filename):
 
     else:
         return create_json(file, original_filename)
-
-
 def create_json(dataframe, original_filename):
-    # Creates json file from xlsx & uploads to Firebase
+    # Creates JSON file from xlsx & uploads to Firebase
     try:
         year, month, day = extract_date_from_filename(original_filename)
         file_date = f"{year}-{month}-{day}"
@@ -124,16 +122,13 @@ def create_json(dataframe, original_filename):
         raise
 
     return output_path
-
-
 def extract_date_from_filename(filename: Path) -> tuple[str, str, str]:
-    """Extract year, month, day from filename in YYYY-MM-DD format."""
+    """Extract year, month, day from the filename in YYYY-MM-DD format."""
     date_str = str(filename).split(' ')[-1].replace('.xlsx', '')
     date_obj = datetime.strptime(date_str, '%Y-%m-%d')
     return (str(date_obj.year),
             f"{date_obj.month:02d}",
             f"{date_obj.day:02d}")
-
 def fix_broadcast_time(timestr: str, date_of_file: str) -> str | None:
     """Convert time strings like '24:00' to next day datetime."""
     try:
@@ -145,11 +140,9 @@ def fix_broadcast_time(timestr: str, date_of_file: str) -> str | None:
         return f'{date_of_file} {hour:02d}:{minute:02d}'
     except:
         return None
-
 def rename_columns(df, string_to_remove):
     new_columns = {col: col.replace(string_to_remove, '') for col in df.columns}
     return df.rename(columns=new_columns)
-
 def read_json(file):
     with file.open('r', encoding='utf-8') as f:
         data = json.load(f)
