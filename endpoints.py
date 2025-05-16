@@ -1,13 +1,19 @@
 ﻿import json
+import os
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Header, Request
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+
+from config import config
 
 from analysis import ratings_read_test
 from utils import validate_excel, read_json
 
 import pandas as pd
+
+# Get config based on environment
+env = os.getenv('FLASK_ENV', 'default')
+current_config = config[env]
 
 
 def setup_routes(app: FastAPI):
@@ -54,20 +60,23 @@ def setup_routes(app: FastAPI):
 
     @app.get("/display")
     async def display(year: str, month: str, day: str):
-        # response = JSONResponse(
-        #     content={"message": f"Received: year={year}, month={month}, day={day}"}
-        # )
-        # print(f"{year}-{month}-{day}.json")
-        path = 'C:/Users/panas/PycharmProjects/ratings_backend/ratings_data'
-        file = Path(f"{path}/{year}/{month}/{year}-{month}-{day}.json")
-        if file.exists():
-            result = ratings_read_test(file)
-            return JSONResponse(
-                content=json.loads(result),
-                status_code=200
-            )
+
+        if current_config.STORAGE_TYPE == 'local':
+
+            path = 'C:/Users/panas/PycharmProjects/ratings_backend/ratings_data'
+            file = Path(f"{path}/{year}/{month}/{year}-{month}-{day}.json")
+            if file.exists():
+                result = ratings_read_test(file)
+                return JSONResponse(
+                    content=json.loads(result),
+                    status_code=200
+                )
+            else:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "File not found"}
+                )
         else:
-            return JSONResponse(
-                status_code=400,
-                content={"error": "File not found"}
-            )
+            # Add your Firebase storage logic here
+            pass
+
