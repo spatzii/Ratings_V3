@@ -12,7 +12,7 @@ from utils import validate_excel, read_json
 import pandas as pd
 
 # Get config based on environment
-env = os.getenv('FLASK_ENV', 'default')
+env = os.getenv('ENV', 'development')
 current_config = config[env]
 
 
@@ -63,8 +63,7 @@ def setup_routes(app: FastAPI):
 
         if current_config.STORAGE_TYPE == 'local':
 
-            path = 'C:/Users/panas/PycharmProjects/ratings_backend/ratings_data'
-            file = Path(f"{path}/{year}/{month}/{year}-{month}-{day}.json")
+            file = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
             if file.exists():
                 result = ratings_read_test(file)
                 return JSONResponse(
