@@ -33,6 +33,20 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+if current_config.STORAGE_TYPE == 'firebase':
+
+    try:
+        cred = credentials.Certificate(current_config.FIREBASE_CREDENTIALS)
+        app = firebase_admin.initialize_app(cred, {
+            'storageBucket': os.getenv('FIREBASE_BUCKET')
+        })
+        logger.info("Firebase initialized successfully")
+    except Exception as e:
+        logger.error(f"Firebase initialization error: {str(e)}")
+
+    logger.info("Testing Firebase Storage connection...")
+
+
 def validate_excel(file, original_filename):
 
     if file.columns[4] != "Digi 24.1":
