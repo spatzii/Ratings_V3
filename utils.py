@@ -64,7 +64,7 @@ def validate_excel(file, original_filename):
     else:
         return create_json(file, original_filename)
 def create_json(dataframe, original_filename):
-    # Creates JSON file from xlsx & uploads to Firebase
+    # Creates JSON file from xlsx & uploads to Firebase !!!!!!!!!!!!!!
     try:
         year, month, day = extract_date_from_filename(original_filename)
         file_date = f"{year}-{month}-{day}"
@@ -98,25 +98,23 @@ def create_json(dataframe, original_filename):
             "schema": schema,
             "data": dataframe.to_dict('records')
         }
-        # Export to JSON
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(json_data, f, indent=2)
-
-
+        if current_config.STORAGE_TYPE == 'local':
+            # Export to JSON
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(json_data, f, indent=2)
 
         # Upload to Firebase Storage
-    #     bucket = storage.bucket()
-    #
-    #     blob_path = f"Ratings/{year}/{month}/{extract_date_from_filename(original_filename)}.json"
-    #     logger.info(f"Uploading to Firebase Storage: {blob_path}")
-    #
-    #     blob = bucket.blob(blob_path)
-    #     blob.upload_from_string(
-    #         json_data,
-    #         content_type='application/json'
-    #     )
-    #     logger.info(f"Successfully uploaded: {blob_path}")
-    #
+        if current_config.STORAGE_TYPE == 'firebase':
+            bucket = storage.bucket()
+            blob_path = f"Ratings/{year}/{month}/{year}-{month}-{day}.json"
+            logger.info(f"Uploading to Firebase Storage: {blob_path}")
+            blob = bucket.blob(blob_path)
+            blob.upload_from_string(
+                    json.dumps(json_data),
+                    content_type='application/json'
+                )
+            logger.info(f"Successfully uploaded: {blob_path}")
+
     except Exception as e:
         logger.error(f"Error processing {original_filename}: {str(e)}", exc_info=True)
         raise
