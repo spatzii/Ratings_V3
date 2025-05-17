@@ -60,9 +60,15 @@ def setup_routes(app: FastAPI):
 
     @app.get("/display")
     async def display(year: str, month: str, day: str):
-        file = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
+
+        if current_config.STORAGE_TYPE == 'firebase':
+            file_path = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
+        else:
+            # For local storage, continue using Path
+            file_path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
+
         try:
-            result = ratings_read_test(file)
+            result = ratings_read_test(file_path)
             return JSONResponse(
                 content=json.loads(result),
                 status_code=200

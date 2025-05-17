@@ -15,7 +15,7 @@ class ProductionConfig:
     STORAGE_TYPE = 'firebase'
     FIREBASE_BUCKET = os.getenv('FIREBASE_BUCKET')  # Gets value from .env
     FIREBASE_CREDENTIALS = '/etc/secrets/ratings-firebase-key.json'  # Gets value from .env
-    STORAGE_PATH = os.getenv('FIREBASE_STORAGE_PATH', 'ratings_data')
+    STORAGE_PATH = os.getenv('FIREBASE_STORAGE_PATH', 'Ratings')
 
 
 # You can set this based on an environment variable
