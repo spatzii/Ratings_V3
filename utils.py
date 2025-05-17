@@ -16,7 +16,9 @@ from dotenv import load_dotenv
 env = os.getenv('ENV', 'development')
 current_config = config[env]
 
-load_dotenv()
+if os.getenv('ENV') == 'development':
+    load_dotenv()
+
 INDEX_COLUMN = 'Timebands'
 
 
