@@ -60,24 +60,23 @@ def setup_routes(app: FastAPI):
 
     @app.get("/display")
     async def display(year: str, month: str, day: str):
-
-        if current_config.STORAGE_TYPE == 'local':
-
-            file = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
-            if file.exists():
-                result = ratings_read_test(file)
-                return JSONResponse(
-                    content=json.loads(result),
-                    status_code=200
-                )
-            else:
-                return JSONResponse(
-                    status_code=400,
-                    content={"error": "File not found"}
-                )
-        elif current_config.STORAGE_TYPE == 'firebase':
-            return "Ok"
-        return None
+        file = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
+        try:
+            result = ratings_read_test(file)
+            return JSONResponse(
+                content=json.loads(result),
+                status_code=200
+            )
+        except FileNotFoundError:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "File not found"}
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Error processing file: {str(e)}"}
+            )
 
     @app.get("/test_firebase")
     async def test_firebase_connection():

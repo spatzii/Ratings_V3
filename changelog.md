@@ -8,5 +8,8 @@ Added
 
 Initial project setup
 
+[0.1.1] - 2025-05-17 
+Fixed reading from Firebase storage 
+
 [0.1.0] - 2025-05-17 
 First release of the project
