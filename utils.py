@@ -33,30 +33,6 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-if current_config.STORAGE_TYPE == 'firebase':
-
-    try:
-        cred = credentials.Certificate(os.getenv('FIREBASE_CREDENTIALS'))
-        app = firebase_admin.initialize_app(cred, {
-            'storageBucket': os.getenv('FIREBASE_BUCKET')
-        })
-        logger.info("Firebase initialized successfully")
-    except Exception as e:
-        logger.error(f"Firebase initialization error: {str(e)}")
-
-    logger.info("Testing Firebase Storage connection...")
-
-    try:
-        _bucket = storage.bucket()
-        logger.info(f"Successfully connected to bucket: {_bucket.name}")
-        # blobs = list(_bucket.list_blobs(max_results=1))
-        # if blobs:
-        #     logger.info(f"Successfully listed blob: {blobs[0].name}")
-        # else:
-        #     logger.info("Bucket is empty but accessible")
-    except Exception as e:
-        logger.error(f"Firebase Storage connection test failed: {str(e)}", exc_info=True)
-
 def validate_excel(file, original_filename):
 
     if file.columns[4] != "Digi 24.1":
@@ -150,3 +126,28 @@ def read_json(file):
         dataframe.set_index(INDEX_COLUMN, inplace=True)
         dataframe.index = pd.to_datetime(dataframe.index)
         return dataframe
+
+def test_firebase():
+    if current_config.STORAGE_TYPE == 'firebase':
+
+        try:
+            cred = credentials.Certificate(os.getenv('FIREBASE_CREDENTIALS'))
+            app = firebase_admin.initialize_app(cred, {
+                'storageBucket': os.getenv('FIREBASE_BUCKET')
+            })
+            logger.info("Firebase initialized successfully")
+        except Exception as e:
+            logger.error(f"Firebase initialization error: {str(e)}")
+
+        logger.info("Testing Firebase Storage connection...")
+
+        try:
+            _bucket = storage.bucket()
+            logger.info(f"Successfully connected to bucket: {_bucket.name}")
+            # blobs = list(_bucket.list_blobs(max_results=1))
+            # if blobs:
+            #     logger.info(f"Successfully listed blob: {blobs[0].name}")
+            # else:
+            #     logger.info("Bucket is empty but accessible")
+        except Exception as e:
+            logger.error(f"Firebase Storage connection test failed: {str(e)}", exc_info=True)

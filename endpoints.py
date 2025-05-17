@@ -79,3 +79,17 @@ def setup_routes(app: FastAPI):
             # Add your Firebase storage logic here
             pass
 
+    @app.get("/test_firebase")
+    async def test_firebase_connection():
+        from utils import test_firebase
+        result = test_firebase()
+        if result["status"] == "error":
+            return JSONResponse(
+                status_code=400,
+                content=result
+            )
+        return JSONResponse(
+            content=result,
+            status_code=200
+        )
+
