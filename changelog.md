@@ -1,0 +1,12 @@
+﻿Changelog
+All notable changes to this project will be documented in this file.
+The format is based on Keep a Changelog,
+and this project adheres to Semantic Versioning.
+
+[Unreleased]
+Added
+
+Initial project setup
+
+[0.1.0] - 2025-05-17 
+First release of the project

@@ -75,9 +75,9 @@ def setup_routes(app: FastAPI):
                     status_code=400,
                     content={"error": "File not found"}
                 )
-        else:
-            # Add your Firebase storage logic here
-            pass
+        elif current_config.STORAGE_TYPE == 'firebase':
+            return "Ok"
+        return None
 
     @app.get("/test_firebase")
     async def test_firebase_connection():
