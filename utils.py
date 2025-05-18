@@ -1,34 +1,23 @@
-﻿import os
-import sys
-import json
-import firebase_admin
-
+﻿import json
 import pandas as pd
 
-from config import config
+from config import current_config
 from datetime import datetime
 from pathlib import Path
 from firebase_admin import storage
-from dotenv import load_dotenv
 from logger import logger
-
-env = os.getenv('ENV', 'development')
-current_config = config[env]
-
-if os.getenv('ENV') == 'development':
-    load_dotenv()
 
 INDEX_COLUMN = 'Timebands'
 
-def validate_excel(file, original_filename):
+def validate_original_excel_file(file, original_filename):
 
     if file.columns[4] != "Digi 24.1":
         logger.info("XLSX Validation Error!")
         return "Error"
 
     else:
-        return create_json(file, original_filename)
-def create_json(dataframe, original_filename):
+        return convert_ratings_to_json(file, original_filename)
+def convert_ratings_to_json(dataframe, original_filename):
     # Creates JSON file from xlsx & uploads to Firebase !!!!!!!!!!!!!!
     try:
         year, month, day = extract_date_from_filename(original_filename)
@@ -106,7 +95,7 @@ def fix_broadcast_time(timestr: str, date_of_file: str) -> str | None:
 def rename_columns(df, string_to_remove):
     new_columns = {col: col.replace(string_to_remove, '') for col in df.columns}
     return df.rename(columns=new_columns)
-def read_json(file):
+def unpack_json_to_dataframe(file):
     try:
         if current_config.STORAGE_TYPE == 'firebase':
             # Handle Firebase storage path

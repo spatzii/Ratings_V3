@@ -1,8 +1,6 @@
 ﻿import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
 class Config:
     # Common configurations
     pass
@@ -24,3 +22,18 @@ config = {
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
+
+
+def initialize_settings():
+    """Initialize application settings and environment configuration."""
+    env = os.getenv('ENV', 'development')
+
+    # Load environment variables from .env file in development
+    if env == 'development':
+        load_dotenv()
+
+    return config[env]
+
+# Create a settings instance that can be imported by other modules
+current_config = initialize_settings()
+

@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from config import config
 
 from analysis import ratings_read_test
-from utils import validate_excel, read_json
+from utils import validate_original_excel_file, unpack_json_to_dataframe
 
 import pandas as pd
 
@@ -40,7 +40,7 @@ def setup_routes(app: FastAPI):
         try:
             parsed_file = pd.read_excel(contents, sheet_name=2, header=2, index_col=0, usecols=[0] + list(range(19, 37)))  # type: ignore
 
-            validation_result = validate_excel(parsed_file, file.filename)
+            validation_result = validate_original_excel_file(parsed_file, file.filename)
 
             if validation_result == "Error":
                 return JSONResponse(status_code=400, content={"error": "Invalid Excel format"})
@@ -55,7 +55,7 @@ def setup_routes(app: FastAPI):
             return JSONResponse(status_code=400, content={"error": "Invalid file type"})
         contents = await file.read()
         json_str = contents.decode('utf-8')
-        read_json(json_str)
+        unpack_json_to_dataframe(json_str)
         return JSONResponse(content={"message": "File processed successfully"})
 
     @app.get("/display")

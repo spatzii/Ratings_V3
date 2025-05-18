@@ -2,12 +2,10 @@
 import os
 
 from firebase_admin import credentials, storage, initialize_app
-from config import config
+from config import current_config
 from logger import logger
 
 
-env = os.getenv('ENV', 'development')
-current_config = config[env]
 
 
 def initialize_firebase():
