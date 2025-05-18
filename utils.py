@@ -120,12 +120,26 @@ def rename_columns(df, string_to_remove):
     new_columns = {col: col.replace(string_to_remove, '') for col in df.columns}
     return df.rename(columns=new_columns)
 def read_json(file):
-    with file.open('r', encoding='utf-8') as f:
-        data = json.load(f)
+    try:
+        if current_config.STORAGE_TYPE == 'firebase':
+            # Handle Firebase storage path
+            bucket = storage.bucket()
+            blob = bucket.blob(file)  # file here is the path string
+            content = blob.download_as_text()
+            data = json.loads(content)
+        else:
+            # Handle local file path
+            with open(file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
         dataframe = pd.DataFrame(data['data'])
         dataframe.set_index(INDEX_COLUMN, inplace=True)
         dataframe.index = pd.to_datetime(dataframe.index)
         return dataframe
+    except Exception as e:
+        logger.error(f"Error reading JSON: {str(e)}")
+        raise
+
 def test_firebase():
     if current_config.STORAGE_TYPE == 'firebase':
         try:
