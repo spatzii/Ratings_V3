@@ -1,7 +1,6 @@
 ﻿import os
 import sys
 import json
-import logging
 import firebase_admin
 
 import pandas as pd
@@ -11,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from firebase_admin import storage
 from dotenv import load_dotenv
-
+from logger import logger
 
 env = os.getenv('ENV', 'development')
 current_config = config[env]
@@ -20,18 +19,6 @@ if os.getenv('ENV') == 'development':
     load_dotenv()
 
 INDEX_COLUMN = 'Timebands'
-
-
-# Configure logging to output to console only
-logging.basicConfig(
-    level=logging.INFO,  # Use INFO level for production
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-
-logger = logging.getLogger(__name__)
 
 def validate_excel(file, original_filename):
 

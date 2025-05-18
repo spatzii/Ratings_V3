@@ -1,22 +1,14 @@
 ﻿import firebase_admin
+import os
+
 from firebase_admin import credentials, storage, initialize_app
 from config import config
-import os
-import logging
-import sys
+from logger import logger
+
 
 env = os.getenv('ENV', 'development')
 current_config = config[env]
 
-logging.basicConfig(
-    level=logging.INFO,  # Use INFO level for production
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-
-logger = logging.getLogger(__name__)
 
 def initialize_firebase():
     """Initialize Firebase app if not already initialized."""
