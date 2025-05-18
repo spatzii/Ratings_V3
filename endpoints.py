@@ -60,23 +60,66 @@ def setup_routes(app: FastAPI):
 
     @app.get("/display")
     async def display(year: str, month: str, day: str):
-        file = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
         try:
-            result = ratings_read_test(file)
-            return JSONResponse(
-                content=json.loads(result),
-                status_code=200
-            )
+            if current_config.STORAGE_TYPE == 'firebase':
+                file_path = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
+                print(f"Firebase path: {file_path}")
+            else:
+                file_path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
+                print(f"Local path: {file_path}")
+
+            result = ratings_read_test(file_path)
+            try:
+                json_content = json.loads(result)
+                return JSONResponse(
+                    content=json_content,
+                    status_code=200
+                )
+            except json.JSONDecodeError as json_err:
+                print(f"JSON parsing error: {json_err}")
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": f"Invalid JSON format: {str(json_err)}"}
+                )
         except FileNotFoundError:
+            print(f"File not found: {file_path}")
             return JSONResponse(
                 status_code=404,
                 content={"error": "File not found"}
             )
         except Exception as e:
+            print(f"Unexpected error: {str(e)}")
             return JSONResponse(
                 status_code=500,
                 content={"error": f"Error processing file: {str(e)}"}
             )
+
+    # @app.get("/display")
+    # async def display(year: str, month: str, day: str):
+    #
+    #     if current_config.STORAGE_TYPE == 'firebase':
+    #         file_path = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
+    #
+    #     else:
+    #         # For local storage, continue using Path
+    #         file_path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
+    #
+    #     try:
+    #         result = ratings_read_test(file_path)
+    #         return JSONResponse(
+    #             content=json.loads(result),
+    #             status_code=200
+    #         )
+    #     except FileNotFoundError:
+    #         return JSONResponse(
+    #             status_code=404,
+    #             content={"error": "File not found"}
+    #         )
+    #     except Exception as e:
+    #         return JSONResponse(
+    #             status_code=500,
+    #             content={"error": f"Error processing file: {str(e)}"}
+    #         )
 
     @app.get("/test_firebase")
     async def test_firebase_connection():
