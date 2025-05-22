@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from config import config
 
 from analysis import ratings_read_test
-from utils import validate_original_excel_file, unpack_json_to_dataframe
+from utils import validate_original_excel_file, unpack_json_to_dataframe, prepare_json
 
 import pandas as pd
 
@@ -31,21 +31,41 @@ def setup_routes(app: FastAPI):
         }
 
     @app.post("/upload/xlsx")
-    async def upload_xlsx(file: UploadFile = File(...)):
+    async def upload_xlsx(xlsx_file: UploadFile = File(...)):
 
-        if not file.filename.endswith(".xlsx"):
+        if not xlsx_file.filename.endswith(".xlsx"):
             return JSONResponse(status_code=400, content={"error": "Invalid file type"})
-        contents = await file.read()
+        contents_of_xlsx = await xlsx_file.read()
 
         try:
-            parsed_file = pd.read_excel(contents, sheet_name=2, header=2, index_col=0, usecols=[0] + list(range(19, 37)))  # type: ignore
+            xlsx_ratings_sheet = pd.read_excel(contents_of_xlsx,  # type: ignore
+                                               sheet_name=2,
+                                               header=2,
+                                               index_col=0,
+                                               usecols=[0] + list(range(19, 37)))
 
-            validation_result = validate_original_excel_file(parsed_file, file.filename)
+            validation_flag = validate_original_excel_file(xlsx_ratings_sheet)
 
-            if validation_result == "Error":
+            if validation_flag == "Error":
                 return JSONResponse(status_code=400, content={"error": "Invalid Excel format"})
 
-            return JSONResponse(content={"message": "File processed successfully", "result": str(validation_result)})
+            if validation_flag is True:  # explicitly check for True
+                try:
+                    result_path = prepare_json(xlsx_ratings_sheet, xlsx_file.filename)
+                    return JSONResponse(
+                        content={
+                            "message": "File processed successfully",
+                            "path": result_path
+                        }
+                    )
+                except Exception as prep_error:
+                    return JSONResponse(
+                        status_code=500,
+                        content={"error": f"Error preparing JSON: {str(prep_error)}"}
+                    )
+
+            return JSONResponse(status_code=400, content={"error": "Validation failed"})
+
         except Exception as e:
             return JSONResponse(status_code=400, content={"error": f"Error processing file: {str(e)}"})
 
@@ -93,33 +113,6 @@ def setup_routes(app: FastAPI):
                 status_code=500,
                 content={"error": f"Error processing file: {str(e)}"}
             )
-
-    # @app.get("/display")
-    # async def display(year: str, month: str, day: str):
-    #
-    #     if current_config.STORAGE_TYPE == 'firebase':
-    #         file_path = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
-    #
-    #     else:
-    #         # For local storage, continue using Path
-    #         file_path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
-    #
-    #     try:
-    #         result = ratings_read_test(file_path)
-    #         return JSONResponse(
-    #             content=json.loads(result),
-    #             status_code=200
-    #         )
-    #     except FileNotFoundError:
-    #         return JSONResponse(
-    #             status_code=404,
-    #             content={"error": "File not found"}
-    #         )
-    #     except Exception as e:
-    #         return JSONResponse(
-    #             status_code=500,
-    #             content={"error": f"Error processing file: {str(e)}"}
-    #         )
 
     @app.get("/test_firebase")
     async def test_firebase_connection():
