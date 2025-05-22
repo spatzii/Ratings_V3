@@ -4,9 +4,9 @@ import json
 from utils import unpack_json_to_dataframe
 
 
-def ratings_read_test(file):
-    ratings = unpack_json_to_dataframe(file)
-    jds = ratings.between_time('20:00', '22:59')
+def ratings_read_test(filepath):
+    ratings_data = unpack_json_to_dataframe(filepath)
+    jds = ratings_data.between_time('20:00', '22:59')
     resampled_data = jds.loc[:,
                             ['Digi 24', 'Antena 3 CNN']].resample('15min').mean().round(2)
     mean_data = jds.loc[:,
@@ -23,7 +23,3 @@ def ratings_read_test(file):
 
     result = resampled_dict
     return json.dumps(result)
-
-    # print(jds.loc['2025-05-07 20:00':'2025-05-07 22:59', ['Digi 24', 'Antena 3 CNN']].resample('15min').mean().round(2))
-    # print("\n")
-    # print(jds.loc['2025-05-07 20:00':'2025-05-07 22:59', ['Digi 24', 'Antena 3 CNN']].mean().round(2))

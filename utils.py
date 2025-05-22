@@ -11,21 +11,24 @@ from typing import Final
 INDEX_COLUMN: Final = 'Timebands'
 
 
-def validate_original_excel_file(file):
+def validate_original_excel_file(ratings_df):
 
-    if file.columns[4] != "Digi 24.1":
+    if ratings_df.columns[4] != "Digi 24.1":
         logger.info("XLSX Validation Error!")
         return "Error"
     else:
         return True
-def prepare_json(file, original_filename_as_string):
+
+def prepare_json(ratings_df, original_filename_as_string):
     storage_path = generate_storage_path(original_filename_as_string)
     full_path = handle_storage_path(storage_path)
-    prepared_json = clean_data(file, original_filename_as_string)
+    prepared_json = clean_ratings_data(ratings_df, original_filename_as_string)
     return upload_json(prepared_json, full_path)
-def generate_storage_path(org_filename):
-    year, month, day = extract_date_from_filename(org_filename)
+
+def generate_storage_path(original_filename):
+    year, month, day = extract_date_from_filename(original_filename)
     return f"{year}/{month}/{year}-{month}-{day}.json"
+
 def handle_storage_path(base_path: str) -> str:
     """Handle storage-specific path operations"""
     if current_config.STORAGE_TYPE == 'local':
@@ -37,7 +40,8 @@ def handle_storage_path(base_path: str) -> str:
         return str(full_path)
     else:  # firebase
         return f"{current_config.STORAGE_PATH}/{base_path}"
-def clean_data(dataframe, original_filename):
+
+def clean_ratings_data(dataframe, original_filename):
     year, month, day = extract_date_from_filename(original_filename)
 
     file_format_from_date = f"{year}-{month}-{day}"
@@ -64,6 +68,7 @@ def clean_data(dataframe, original_filename):
         "data": dataframe.to_dict('records')
     }
     return json_data
+
 def upload_json(prepared_json, output_path):
     try:
         if current_config.STORAGE_TYPE == 'local':
@@ -95,6 +100,7 @@ def extract_date_from_filename(filename: Path) -> tuple[str, str, str]:
     return (str(date_obj.year),
             f"{date_obj.month:02d}",
             f"{date_obj.day:02d}")
+
 def fix_broadcast_time(timestring: str, date_of_file: str) -> str | None:
     """Convert time strings like '24:00' to next day datetime."""
     try:
@@ -106,9 +112,11 @@ def fix_broadcast_time(timestring: str, date_of_file: str) -> str | None:
         return f'{date_of_file} {hour:02d}:{minute:02d}'
     except:
         return None
+
 def rename_columns(df, string_to_remove):
     new_columns = {col: col.replace(string_to_remove, '') for col in df.columns}
     return df.rename(columns=new_columns)
+
 def unpack_json_to_dataframe(file):
     data = None ## supress "local variable might be referenced before assignment"
 
@@ -131,6 +139,7 @@ def unpack_json_to_dataframe(file):
     except Exception as e:
         logger.error(f"Error reading JSON: {str(e)}")
         raise
+
 def test_firebase():
     if current_config.STORAGE_TYPE == 'firebase':
         try:
