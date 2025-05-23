@@ -1,5 +1,6 @@
 ﻿import json
 import os
+
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Header, Request
 from fastapi.responses import JSONResponse
@@ -7,7 +8,7 @@ from fastapi.responses import JSONResponse
 from config import config
 
 from analysis import ratings_read_test
-from utils import validate_original_excel_file, unpack_json_to_dataframe, prepare_json
+from utils import validate_original_excel_file, json_to_dataframe, prepare_json
 
 import pandas as pd
 
@@ -35,21 +36,21 @@ def setup_routes(app: FastAPI):
 
         if not xlsx_file.filename.endswith(".xlsx"):
             return JSONResponse(status_code=400, content={"error": "Invalid file type"})
-        contents_of_xlsx = await xlsx_file.read()
+        contents_of_xlsx:bytes = await xlsx_file.read()
 
         try:
-            xlsx_ratings_sheet = pd.read_excel(contents_of_xlsx,  # type: ignore
+            xlsx_ratings_sheet:pd.DataFrame = pd.read_excel(contents_of_xlsx,  # type: ignore
                                                sheet_name=2,
                                                header=2,
                                                index_col=0,
                                                usecols=[0] + list(range(19, 37)))
 
-            validation_flag = validate_original_excel_file(xlsx_ratings_sheet)
+            validation_flag:bool = validate_original_excel_file(xlsx_ratings_sheet)
 
-            if validation_flag == "Error":
+            if validation_flag is False:
                 return JSONResponse(status_code=400, content={"error": "Invalid Excel format"})
 
-            if validation_flag is True:  # explicitly check for True
+            if validation_flag is True:
                 try:
                     result_path = prepare_json(xlsx_ratings_sheet, xlsx_file.filename)
                     return JSONResponse(
@@ -75,20 +76,20 @@ def setup_routes(app: FastAPI):
             return JSONResponse(status_code=400, content={"error": "Invalid file type"})
         contents = await file.read()
         json_str = contents.decode('utf-8')
-        unpack_json_to_dataframe(json_str)
+        json_to_dataframe(json_str)
         return JSONResponse(content={"message": "File processed successfully"})
 
     @app.get("/display")
     async def display(year: str, month: str, day: str):
         try:
             if current_config.STORAGE_TYPE == 'firebase':
-                file_path = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
+                file_path:str = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
                 print(f"Firebase path: {file_path}")
             else:
-                file_path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
+                file_path:Path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
                 print(f"Local path: {file_path}")
 
-            result = ratings_read_test(file_path)
+            result:str = ratings_read_test(file_path)
             try:
                 json_content = json.loads(result)
                 return JSONResponse(

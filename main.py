@@ -1,5 +1,4 @@
-﻿from fastapi import FastAPI, UploadFile, File, Header, Request
-from fastapi.middleware.cors import CORSMiddleware
+﻿from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from firebase_init import initialize_firebase
 from contextlib import asynccontextmanager
