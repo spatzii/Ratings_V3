@@ -1,4 +1,5 @@
 ﻿import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 class Config:
@@ -6,7 +7,9 @@ class Config:
     pass
 
 class DevelopmentConfig(Config):
-    STORAGE_PATH = 'C:/Users/panas/PycharmProjects/ratings_backend/ratings_data'
+    PROJECT_ROOT = Path(__file__).parent
+    # Create a platform-independent path for storage
+    STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
     STORAGE_TYPE = 'local'
 
 class ProductionConfig(Config):
