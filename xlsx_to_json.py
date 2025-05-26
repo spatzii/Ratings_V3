@@ -1,32 +1,34 @@
 import json
 import pandas as pd
 
-from config import current_config
+from utils.config import current_config
 from pathlib import Path
 from firebase_admin import storage
-from logger import logger
+from utils.logger import logger
 from typing import Final
 
-from json_prep import generate_storage_path, handle_storage_path, clean_ratings_data
+from utils.json_prep import generate_storage_path, handle_storage_path, clean_ratings_data
 
 INDEX_COLUMN: Final = 'Timebands'
 
 
-def validate_original_excel_file(ratings_df: pd.DataFrame) -> bool:
-
+def validate_excel(ratings_df: pd.DataFrame) -> bool:
     if ratings_df.columns[4] != "Digi 24.1":
         logger.info("XLSX Validation Error!")
         return False
     else:
         return True
 
-def prepare_json(ratings_df, original_filename_as_string):
-    storage_path = generate_storage_path(original_filename_as_string)
-    full_path = handle_storage_path(storage_path)
-    prepared_json = clean_ratings_data(ratings_df, original_filename_as_string)
-    return upload_json(prepared_json, full_path)
 
-def upload_json(prepared_json, output_path):
+def prepare_json(ratings_df: pd.DataFrame, original_filename: str) -> str:
+    storage_path:str = generate_storage_path(original_filename)
+    full_path:str = handle_storage_path(storage_path)
+    prepared_json:dict = clean_ratings_data(ratings_df, original_filename)
+    upload_json(prepared_json, full_path)
+    return full_path
+
+
+def upload_json(prepared_json:dict, output_path:str) -> None:
     try:
         if current_config.STORAGE_TYPE == 'local':
             # Export to JSON
@@ -48,10 +50,9 @@ def upload_json(prepared_json, output_path):
         logger.error(f"Error processing {output_path}: {str(e)}", exc_info=True)
         raise
 
-    return output_path
 
-def json_to_dataframe(file):
-    data = None ## supress "local variable might be referenced before assignment"
+def json_to_df(file):
+    data = None  ## supress "local variable might be referenced before assignment"
 
     try:
         if current_config.STORAGE_TYPE == 'firebase':
@@ -73,6 +74,7 @@ def json_to_dataframe(file):
         logger.error(f"Error reading JSON: {str(e)}")
         raise
 
+
 def test_firebase():
     if current_config.STORAGE_TYPE == 'firebase':
         try:
@@ -93,4 +95,3 @@ def test_firebase():
             "status": "error",
             "message": "Firebase storage is not configured"
         }
-

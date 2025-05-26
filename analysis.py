@@ -1,12 +1,12 @@
 ﻿import pandas as pd
 import json
 
-from utils import json_to_dataframe
+from xlsx_to_json import json_to_df
 
 
-def ratings_read_test(filepath):
-    ratings_data = json_to_dataframe(filepath)
-    jds = ratings_data.between_time('20:00', '22:59')
+def ratings_read_test(filepath:str) -> str:
+    ratings_data:pd.DataFrame = json_to_df(filepath)
+    jds:pd.DataFrame = ratings_data.between_time('20:00', '22:59')
     resampled_data = jds.loc[:,
                             ['Digi 24', 'Antena 3 CNN']].resample('15min').mean().round(2)
     mean_data = jds.loc[:,
@@ -21,5 +21,5 @@ def ratings_read_test(filepath):
         column_data['Medie'] = mean_data[column]
         resampled_dict[column] = column_data
 
-    result = resampled_dict
+    result:dict = resampled_dict
     return json.dumps(result)

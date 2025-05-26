@@ -1,7 +1,6 @@
 ﻿import pandas as pd
-from pandas.core.interchange.dataframe_protocol import DataFrame
 
-from config import current_config
+from utils.config import current_config
 from pathlib import Path
 from logger import logger
 from typing import Final
@@ -9,9 +8,11 @@ from datetime import datetime
 
 INDEX_COLUMN: Final = 'Timebands'
 
-def generate_storage_path(original_filename) -> str:
+
+def generate_storage_path(original_filename:str) -> str:
     year, month, day = extract_date_from_filename(original_filename)
     return f"{year}/{month}/{year}-{month}-{day}.json"
+
 
 def handle_storage_path(base_path: str) -> str:
     """Handle storage-specific path operations
@@ -29,6 +30,7 @@ def handle_storage_path(base_path: str) -> str:
         return str(full_path)
     else:  # firebase
         return f"{current_config.STORAGE_PATH}/{base_path}"
+
 
 def clean_ratings_data(dataframe, original_filename) -> dict:
     year, month, day = extract_date_from_filename(original_filename)
@@ -58,13 +60,15 @@ def clean_ratings_data(dataframe, original_filename) -> dict:
     }
     return json_data
 
-def extract_date_from_filename(filename: Path) -> tuple[str, str, str]:
+
+def extract_date_from_filename(filename: str) -> tuple[str, str, str]:
     """Extract year, month, day from the filename in YYYY-MM-DD format."""
     date_str = str(filename).split(' ')[-1].replace('.xlsx', '')
     date_obj = datetime.strptime(date_str, '%Y-%m-%d')
     return (str(date_obj.year),
             f"{date_obj.month:02d}",
             f"{date_obj.day:02d}")
+
 
 def fix_broadcast_time(timestring: str, date_of_file: str) -> str | None:
     """Convert time strings like '24:00' to next day datetime."""
@@ -78,6 +82,7 @@ def fix_broadcast_time(timestring: str, date_of_file: str) -> str | None:
     except:
         return None
 
+
 def rename_columns(df, string_to_remove):
     new_columns: dict = {col: col.replace(string_to_remove, '') for col in df.columns}
-    return df.rename(columns=new_columns) ## Not used!
+    return df.rename(columns=new_columns)  ## Not used!

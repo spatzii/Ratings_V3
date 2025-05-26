@@ -1,8 +1,8 @@
 ﻿import firebase_admin
 import os
 
-from firebase_admin import credentials, storage, initialize_app
-from config import current_config
+from firebase_admin import credentials
+from xlsx_to_json.config import current_config
 from logger import logger
 
 

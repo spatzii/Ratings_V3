@@ -5,6 +5,9 @@ and this project adheres to Semantic Versioning.
 
 [Unreleased]
 
+[0.1.3] - 2025-05-25 
+- Refactored code and hierarchy, improved type hinting, opening the door to code expansion
+
 [0.1.2] - 2025-05-22 
 - Added functionality to read ratings from any date, in the 8PM-23PM timeframe
 - Improved internal data parsing logic (Modular approach incoming)

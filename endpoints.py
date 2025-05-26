@@ -1,20 +1,13 @@
 ﻿import json
-import os
 
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Header, Request
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 
-from config import config
-
 from analysis import ratings_read_test
-from utils import validate_original_excel_file, json_to_dataframe, prepare_json
+from xlsx_to_json import validate_excel, json_to_df, prepare_json
 
 import pandas as pd
-
-# Get config based on environment
-env = os.getenv('ENV', 'development')
-current_config = config[env]
 
 
 def setup_routes(app: FastAPI):
@@ -45,7 +38,7 @@ def setup_routes(app: FastAPI):
                                                index_col=0,
                                                usecols=[0] + list(range(19, 37)))
 
-            validation_flag:bool = validate_original_excel_file(xlsx_ratings_sheet)
+            validation_flag:bool = validate_excel(xlsx_ratings_sheet)
 
             if validation_flag is False:
                 return JSONResponse(status_code=400, content={"error": "Invalid Excel format"})
@@ -76,7 +69,7 @@ def setup_routes(app: FastAPI):
             return JSONResponse(status_code=400, content={"error": "Invalid file type"})
         contents = await file.read()
         json_str = contents.decode('utf-8')
-        json_to_dataframe(json_str)
+        json_to_df(json_str)
         return JSONResponse(content={"message": "File processed successfully"})
 
     @app.get("/display")
@@ -90,8 +83,9 @@ def setup_routes(app: FastAPI):
                 print(f"Local path: {file_path}")
 
             result:str = ratings_read_test(file_path)
+
             try:
-                json_content = json.loads(result)
+                json_content:dict = json.loads(result)
                 return JSONResponse(
                     content=json_content,
                     status_code=200

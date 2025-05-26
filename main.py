@@ -1,6 +1,6 @@
 ﻿from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-from firebase_init import initialize_firebase
+from utils.firebase_init import initialize_firebase
 from contextlib import asynccontextmanager
 
 from endpoints import setup_routes
