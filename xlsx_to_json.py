@@ -4,10 +4,12 @@ import pandas as pd
 from utils.config import current_config
 from pathlib import Path
 from firebase_admin import storage
-from utils.logger import logger
+from utils.logger import get_logger
 from typing import Final
 
 from utils.json_prep import generate_storage_path, handle_storage_path, clean_ratings_data
+
+logger = get_logger(__name__)
 
 INDEX_COLUMN: Final = 'Timebands'
 

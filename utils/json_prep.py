@@ -2,9 +2,11 @@
 
 from utils.config import current_config
 from pathlib import Path
-from logger import logger
+from utils.logger import get_logger
 from typing import Final
 from datetime import datetime
+
+logger = get_logger(__name__)
 
 INDEX_COLUMN: Final = 'Timebands'
 

@@ -2,9 +2,10 @@
 import os
 
 from firebase_admin import credentials
-from xlsx_to_json.config import current_config
-from logger import logger
+from utils.config import current_config
+from utils.logger import get_logger
 
+logger = get_logger(__name__)
 
 
 

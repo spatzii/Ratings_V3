@@ -3,11 +3,15 @@
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import JSONResponse
+from utils.logger import get_logger
 
 from analysis import ratings_read_test
-from xlsx_to_json import validate_excel, json_to_df, prepare_json
+from xlsx_to_json import validate_excel, json_to_df, prepare_json, test_firebase
+from utils.config import current_config
 
 import pandas as pd
+
+logger = get_logger(__name__)
 
 
 def setup_routes(app: FastAPI):
@@ -63,24 +67,15 @@ def setup_routes(app: FastAPI):
         except Exception as e:
             return JSONResponse(status_code=400, content={"error": f"Error processing file: {str(e)}"})
 
-    @app.post("/upload/json")
-    async def upload_json(file: UploadFile = File(...)):
-        if not file.filename.endswith(".json"):
-            return JSONResponse(status_code=400, content={"error": "Invalid file type"})
-        contents = await file.read()
-        json_str = contents.decode('utf-8')
-        json_to_df(json_str)
-        return JSONResponse(content={"message": "File processed successfully"})
-
     @app.get("/display")
-    async def display(year: str, month: str, day: str):
+    async def display(year: str, month: str, day: str, startHour: str, endHour: str) -> JSONResponse:
         try:
             if current_config.STORAGE_TYPE == 'firebase':
                 file_path:str = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
                 print(f"Firebase path: {file_path}")
             else:
                 file_path:Path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
-                print(f"Local path: {file_path}")
+
 
             result:str = ratings_read_test(file_path)
 
@@ -111,7 +106,6 @@ def setup_routes(app: FastAPI):
 
     @app.get("/test_firebase")
     async def test_firebase_connection():
-        from utils import test_firebase
         result = test_firebase()
         if result["status"] == "error":
             return JSONResponse(

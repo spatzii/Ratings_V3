@@ -7,7 +7,7 @@ class Config:
     pass
 
 class DevelopmentConfig(Config):
-    PROJECT_ROOT = Path(__file__).parent
+    PROJECT_ROOT = Path(__file__).parent.parent
     # Create a platform-independent path for storage
     STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
     STORAGE_TYPE = 'local'
