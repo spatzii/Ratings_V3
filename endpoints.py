@@ -3,11 +3,12 @@
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import JSONResponse
-from utils.logger import get_logger
 
-from analysis import ratings_read_test
+from utils.logger import get_logger
+from analysis import read_ratings
 from xlsx_to_json import validate_excel, json_to_df, prepare_json, test_firebase
 from utils.config import current_config
+from utils.data_management import RatingsParams
 
 import pandas as pd
 
@@ -33,16 +34,16 @@ def setup_routes(app: FastAPI):
 
         if not xlsx_file.filename.endswith(".xlsx"):
             return JSONResponse(status_code=400, content={"error": "Invalid file type"})
-        contents_of_xlsx:bytes = await xlsx_file.read()
+        contents_of_xlsx: bytes = await xlsx_file.read()
 
         try:
-            xlsx_ratings_sheet:pd.DataFrame = pd.read_excel(contents_of_xlsx,  # type: ignore
-                                               sheet_name=2,
-                                               header=2,
-                                               index_col=0,
-                                               usecols=[0] + list(range(19, 37)))
+            xlsx_ratings_sheet: pd.DataFrame = pd.read_excel(contents_of_xlsx,  # type: ignore
+                                                             sheet_name=2,
+                                                             header=2,
+                                                             index_col=0,
+                                                             usecols=[0] + list(range(19, 37)))
 
-            validation_flag:bool = validate_excel(xlsx_ratings_sheet)
+            validation_flag: bool = validate_excel(xlsx_ratings_sheet)
 
             if validation_flag is False:
                 return JSONResponse(status_code=400, content={"error": "Invalid Excel format"})
@@ -69,18 +70,29 @@ def setup_routes(app: FastAPI):
 
     @app.get("/display")
     async def display(year: str, month: str, day: str, startHour: str, endHour: str) -> JSONResponse:
+        """Receives strings in the format: YYYY, MM, DD, HH, HH
+
+        Example: "2025", "05", "17", "20", "23"
+        """
+
         try:
+
+            ratings_params = RatingsParams(year=year,
+                                           month=month,
+                                           day=day,
+                                           start_hour=startHour,
+                                           end_hour=endHour)
+
             if current_config.STORAGE_TYPE == 'firebase':
-                file_path:str = f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json"
+                file_path: str = f"{current_config.STORAGE_PATH}/{ratings_params.file_path}"
                 print(f"Firebase path: {file_path}")
             else:
-                file_path:Path = Path(f"{current_config.STORAGE_PATH}/{year}/{month}/{year}-{month}-{day}.json")
+                file_path: Path = Path(f"{current_config.STORAGE_PATH}/{ratings_params.file_path}")
 
-
-            result:str = ratings_read_test(file_path)
+            result: str = read_ratings(file_path)
 
             try:
-                json_content:dict = json.loads(result)
+                json_content: dict = json.loads(result)
                 return JSONResponse(
                     content=json_content,
                     status_code=200
@@ -116,4 +128,3 @@ def setup_routes(app: FastAPI):
             content=result,
             status_code=200
         )
-

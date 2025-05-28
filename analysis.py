@@ -4,7 +4,7 @@ import json
 from xlsx_to_json import json_to_df
 
 
-def ratings_read_test(filepath:str) -> str:
+def read_ratings(filepath:str) -> str:
     ratings_data:pd.DataFrame = json_to_df(filepath)
     jds:pd.DataFrame = ratings_data.between_time('20:00', '22:59')
     resampled_data = jds.loc[:,
