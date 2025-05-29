@@ -84,7 +84,7 @@ def setup_routes(app: FastAPI):
                                        end_hour=endHour)
 
         try:
-            ratings_data: str = read_ratings(return_file_path(request_params.file_path))
+            ratings_data: str = read_ratings(file_path=return_file_path(request_params.file_path), time_range=request_params.time_range)
 
             try:
                 json_content: dict = json.loads(ratings_data)

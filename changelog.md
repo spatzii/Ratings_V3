@@ -5,6 +5,9 @@ and this project adheres to Semantic Versioning.
 
 [Unreleased]
 
+[0.2.0] - 2025-05-29 
+- Added ability to read ratings from any timeframe and display it as a table (update from v0.1.2)
+
 [0.1.3] - 2025-05-25 
 - Refactored code and hierarchy, improved type hinting, opening the door to code expansion
 

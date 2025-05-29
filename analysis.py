@@ -4,12 +4,12 @@ import json
 from xlsx_to_json import json_to_df
 
 
-def read_ratings(filepath:str) -> str:
-    ratings_data:pd.DataFrame = json_to_df(filepath)
-    jds:pd.DataFrame = ratings_data.between_time('20:00', '22:59')
-    resampled_data = jds.loc[:,
+def read_ratings(file_path:str, time_range:tuple[str, str]) -> str:
+    ratings_data:pd.DataFrame = json_to_df(file_path)
+    timeframe:pd.DataFrame = ratings_data.between_time(time_range[0], time_range[1])
+    resampled_data = timeframe.loc[:,
                             ['Digi 24', 'Antena 3 CNN']].resample('15min').mean().round(2)
-    mean_data = jds.loc[:,
+    mean_data = timeframe.loc[:,
                 ['Digi 24', 'Antena 3 CNN']].mean().round(2)
 
     resampled_dict = {}
