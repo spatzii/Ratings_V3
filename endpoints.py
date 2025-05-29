@@ -1,14 +1,13 @@
 ﻿import json
 
-from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 
 from utils.logger import get_logger
 from analysis import read_ratings
-from xlsx_to_json import validate_excel, json_to_df, prepare_json, test_firebase
-from utils.config import current_config
+from xlsx_to_json import validate_excel, prepare_json, test_firebase
 from utils.data_management import RatingsParams
+from utils.endpoint_utils import create_file_path
 
 import pandas as pd
 
@@ -70,26 +69,22 @@ def setup_routes(app: FastAPI):
 
     @app.get("/display")
     async def display(year: str, month: str, day: str, startHour: str, endHour: str) -> JSONResponse:
-        """Receives strings in the format: YYYY, MM, DD, HH, HH
+        """Receives strings in the format: YYYY, MM, DD, HH, HH. Creates a back-end/storage request based
+        on these strings using RatingsParams dataclass.
+
+        >>>RatingsParams
 
         Example: "2025", "05", "17", "20", "23"
         """
 
+        ratings_params = RatingsParams(year=year,
+                                       month=month,
+                                       day=day,
+                                       start_hour=startHour,
+                                       end_hour=endHour)
+
         try:
-
-            ratings_params = RatingsParams(year=year,
-                                           month=month,
-                                           day=day,
-                                           start_hour=startHour,
-                                           end_hour=endHour)
-
-            if current_config.STORAGE_TYPE == 'firebase':
-                file_path: str = f"{current_config.STORAGE_PATH}/{ratings_params.file_path}"
-                print(f"Firebase path: {file_path}")
-            else:
-                file_path: Path = Path(f"{current_config.STORAGE_PATH}/{ratings_params.file_path}")
-
-            result: str = read_ratings(file_path)
+            result: str = read_ratings(create_file_path(ratings_params))
 
             try:
                 json_content: dict = json.loads(result)
@@ -98,19 +93,19 @@ def setup_routes(app: FastAPI):
                     status_code=200
                 )
             except json.JSONDecodeError as json_err:
-                print(f"JSON parsing error: {json_err}")
+                logger.error(f"JSON parsing error: {json_err}")
                 return JSONResponse(
                     status_code=500,
                     content={"error": f"Invalid JSON format: {str(json_err)}"}
                 )
         except FileNotFoundError:
-            print(f"File not found: {file_path}")
+            logger.error(f"File not found: {ratings_params.file_path}")
             return JSONResponse(
                 status_code=404,
                 content={"error": "File not found"}
             )
         except Exception as e:
-            print(f"Unexpected error: {str(e)}")
+            logger.error(f"Unexpected error: {str(e)}")
             return JSONResponse(
                 status_code=500,
                 content={"error": f"Error processing file: {str(e)}"}

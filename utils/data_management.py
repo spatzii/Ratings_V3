@@ -1,6 +1,12 @@
 from dataclasses import dataclass
 @dataclass()
 class RatingsParams:
+    """Dataclass that contains the information relating to the rating file request received via HTTP from the front-end:
+
+    - a date that constructs a path for storage
+
+    - a timeframe for constructing DataFrame
+    """
     year: str
     month: str
     day: str
