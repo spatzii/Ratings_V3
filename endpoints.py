@@ -7,7 +7,7 @@ from utils.logger import get_logger
 from analysis import read_ratings
 from xlsx_to_json import validate_excel, prepare_json, test_firebase
 from utils.data_management import RatingsParams
-from utils.endpoint_utils import create_file_path
+from utils.endpoint_utils import return_file_path
 
 import pandas as pd
 
@@ -77,17 +77,17 @@ def setup_routes(app: FastAPI):
         Example: "2025", "05", "17", "20", "23"
         """
 
-        ratings_params = RatingsParams(year=year,
+        request_params = RatingsParams(year=year,
                                        month=month,
                                        day=day,
                                        start_hour=startHour,
                                        end_hour=endHour)
 
         try:
-            result: str = read_ratings(create_file_path(ratings_params))
+            ratings_data: str = read_ratings(return_file_path(request_params.file_path))
 
             try:
-                json_content: dict = json.loads(result)
+                json_content: dict = json.loads(ratings_data)
                 return JSONResponse(
                     content=json_content,
                     status_code=200
@@ -99,7 +99,7 @@ def setup_routes(app: FastAPI):
                     content={"error": f"Invalid JSON format: {str(json_err)}"}
                 )
         except FileNotFoundError:
-            logger.error(f"File not found: {ratings_params.file_path}")
+            logger.error(f"File not found: {request_params.file_path}")
             return JSONResponse(
                 status_code=404,
                 content={"error": "File not found"}
