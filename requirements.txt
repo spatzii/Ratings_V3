@@ -1,4 +1,4 @@
-﻿fastapi~=0.109.0  # Update to latest stable version
+﻿fastapi~=0.115.12  # Update to latest stable version
 uvicorn~=0.27.0   # Add version constraint
 pandas~=2.2.3     # Current version is recent
 openpyxl~=3.1.2   # Add version constraint

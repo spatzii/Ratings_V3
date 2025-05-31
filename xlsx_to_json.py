@@ -23,14 +23,14 @@ def validate_excel(ratings_df: pd.DataFrame) -> bool:
 
 
 def prepare_json(ratings_df: pd.DataFrame, original_filename: str) -> str:
-    storage_path:str = generate_storage_path(original_filename)
-    full_path:str = handle_storage_path(storage_path)
-    prepared_json:dict = clean_ratings_data(ratings_df, original_filename)
+    storage_path: str = generate_storage_path(original_filename)
+    full_path: str = handle_storage_path(storage_path)
+    prepared_json: dict = clean_ratings_data(ratings_df, original_filename)
     upload_json(prepared_json, full_path)
     return full_path
 
 
-def upload_json(prepared_json:dict, output_path:str) -> None:
+def upload_json(prepared_json: dict, output_path: str) -> None:
     try:
         if current_config.STORAGE_TYPE == 'local':
             # Export to JSON
@@ -70,6 +70,7 @@ def json_to_df(file):
 
         dataframe = pd.DataFrame(data['data'])
         dataframe.set_index(INDEX_COLUMN, inplace=True)
+        # Converting to datetime index to enable usage of `pd.DataFrame.between_time()` for time-based filtering
         dataframe.index = pd.to_datetime(dataframe.index)
         return dataframe
     except Exception as e:

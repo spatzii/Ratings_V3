@@ -3,7 +3,10 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
-[Unreleased]
+[0.3.0] - 2025-05-31 
+- 
+- Added ability to read multiple channels, based on dynamic input
+- Refactored internal logic
 
 [0.2.0] - 2025-05-29 
 - Added ability to read ratings from any timeframe and display it as a table (update from v0.1.2)
