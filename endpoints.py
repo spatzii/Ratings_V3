@@ -4,10 +4,10 @@ from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 
 from utils.logger import get_logger
-from analysis import read_ratings
+from analysis import read_custom_ratings
 from xlsx_to_json import validate_excel, prepare_json, test_firebase
-from utils.data_management import RatingsParams
-from utils.endpoint_utils import return_file_path
+from utils.data_management import RequestParams
+from utils.utils_endpoints import return_file_path
 
 import pandas as pd
 
@@ -68,23 +68,26 @@ def setup_routes(app: FastAPI):
             return JSONResponse(status_code=400, content={"error": f"Error processing file: {str(e)}"})
 
     @app.get("/display")
-    async def display(year: str, month: str, day: str, startHour: str, endHour: str) -> JSONResponse:
+    async def display(year: str, month: str, day: str, startHour: str, endHour: str, channels: str) -> JSONResponse:
         """Receives strings in the format: YYYY, MM, DD, HH, HH. Creates a back-end/storage request based
         on these strings using RatingsParams dataclass.
 
-        >>>RatingsParams
+        >>>RequestParams
 
         Example: "2025", "05", "17", "20", "23"
         """
 
-        request_params = RatingsParams(year=year,
+        request_params = RequestParams(year=year,
                                        month=month,
                                        day=day,
                                        start_hour=startHour,
-                                       end_hour=endHour)
+                                       end_hour=endHour,
+                                       channels=channels)
 
         try:
-            ratings_data: str = read_ratings(file_path=return_file_path(request_params.file_path), time_range=request_params.time_range)
+            ratings_data: str = read_custom_ratings(file_path=return_file_path(request_params.file_path),
+                                                    time_range=request_params.time_range,
+                                                    channels=request_params.channels)
 
             try:
                 json_content: dict = json.loads(ratings_data)
