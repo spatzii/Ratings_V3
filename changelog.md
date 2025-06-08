@@ -3,8 +3,12 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
-[0.3.0] - 2025-05-31 
-- 
+[0.3.1] - 2025-06-08 
+-
+- Latest .xlsx upload auto-reads the json file with default times (20:00–22:59)
+- Refactored API logic
+
+[0.3.0] - 2025-05-31
 - Added ability to read multiple channels, based on dynamic input
 - Refactored internal logic
 

@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 INDEX_COLUMN: Final = 'Timebands'
 
 
-def validate_excel(ratings_df: pd.DataFrame) -> bool:
+def is_excel_valid(ratings_df: pd.DataFrame) -> bool:
     if ratings_df.columns[4] != "Digi 24.1":
         logger.info("XLSX Validation Error!")
         return False
@@ -25,9 +25,9 @@ def validate_excel(ratings_df: pd.DataFrame) -> bool:
 def prepare_json(ratings_df: pd.DataFrame, original_filename: str) -> str:
     storage_path: str = generate_storage_path(original_filename)
     full_path: str = handle_storage_path(storage_path)
-    prepared_json: dict = clean_ratings_data(ratings_df, original_filename)
+    prepared_json: dict = clean_ratings_data(ratings_df, original_filename) #the actual file being uploaded
     upload_json(prepared_json, full_path)
-    return full_path
+    return full_path #returns string only for logging
 
 
 def upload_json(prepared_json: dict, output_path: str) -> None:

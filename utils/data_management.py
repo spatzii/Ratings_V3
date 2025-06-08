@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-
+from fastapi import Depends
 
 @dataclass()
 class RequestParams:
@@ -63,7 +63,25 @@ Example:
         self.start_hour = datetime.strptime(self.start_hour, format('%H')).strftime('%H:%M')
 
         ### Remove 1 minute from incoming end_hour so it matches rating reading
-        # i.e. from 20:00 to 22:59, not 20:00 to 23:00.
+        # i.e., from 20:00 to 22:59, not 20:00 to 23:00.
         self.end_hour = (datetime.strptime(self.end_hour, format('%H')) - timedelta(hours=0, minutes=1)).strftime('%H:%M')
 
         return self.start_hour, self.end_hour
+
+    @classmethod
+    async def from_query(cls,
+                         year: str,
+                         month: str,
+                         day: str,
+                         startHour: str,
+                         endHour: str,
+                         channels: str
+                         ) -> "RequestParams":
+        return cls(
+            year=year,
+            month=month,
+            day=day,
+            start_hour=startHour,
+            end_hour=endHour,
+            channels=channels
+        )
