@@ -1,13 +1,14 @@
 ﻿import json
 
-from fastapi import FastAPI, UploadFile, File, Request
+from fastapi import FastAPI, UploadFile, File, Request, Depends
 from fastapi.responses import JSONResponse
 
 from utils.logger import get_logger
 from analysis import read_custom_ratings
-from xlsx_to_json import validate_excel, prepare_json, test_firebase
+from xlsx_to_json import is_excel_valid, prepare_json, test_firebase
 from utils.data_management import RequestParams
 from utils.utils_endpoints import return_file_path
+from services.ratings_service import RatingsService
 
 import pandas as pd
 
@@ -33,42 +34,33 @@ def setup_routes(app: FastAPI):
 
         if not xlsx_file.filename.endswith(".xlsx"):
             return JSONResponse(status_code=400, content={"error": "Invalid file type"})
+
         contents_of_xlsx: bytes = await xlsx_file.read()
 
         try:
-            xlsx_ratings_sheet: pd.DataFrame = pd.read_excel(contents_of_xlsx,  # type: ignore
-                                                             sheet_name=2,
-                                                             header=2,
-                                                             index_col=0,
-                                                             usecols=[0] + list(range(19, 37)))
+            ratings_service = RatingsService()
+            result_path = await ratings_service.process_uploaded_ratings(contents_of_xlsx, xlsx_file.filename)
 
-            validation_flag: bool = validate_excel(xlsx_ratings_sheet)
+            # THIS NEEDS TO BE CUSTOMIZABLE
+            time_range = ("20:00", "22:59")  # You might want to make this configurable
+            channels = ["Digi 24", "Antena 3 CNN"]  # Get this from your configuration or request
 
-            if validation_flag is False:
-                return JSONResponse(status_code=400, content={"error": "Invalid Excel format"})
+            ratings_data = await ratings_service.get_ratings(result_path, time_range, channels)
 
-            if validation_flag is True:
-                try:
-                    result_path = prepare_json(xlsx_ratings_sheet, xlsx_file.filename)
-                    return JSONResponse(
-                        content={
-                            "message": "File processed successfully",
-                            "path": result_path
-                        }
-                    )
-                except Exception as prep_error:
-                    return JSONResponse(
-                        status_code=500,
-                        content={"error": f"Error preparing JSON: {str(prep_error)}"}
-                    )
-
-            return JSONResponse(status_code=400, content={"error": "Validation failed"})
-
+            return JSONResponse(
+                content={
+                    "message": "File processed successfully",
+                    "path": result_path,
+                    "ratings": ratings_data
+                }
+            )
+        except ValueError as ve:
+            return JSONResponse(status_code=400, content={"error": str(ve)})
         except Exception as e:
-            return JSONResponse(status_code=400, content={"error": f"Error processing file: {str(e)}"})
+            return JSONResponse(status_code=500, content={"error": f"Error processing file: {str(e)}"})
 
     @app.get("/display")
-    async def display(year: str, month: str, day: str, startHour: str, endHour: str, channels: str) -> JSONResponse:
+    async def display(params: RequestParams = Depends(RequestParams.from_query)) -> JSONResponse:
         """Receives strings in the format: YYYY, MM, DD, HH, HH. Creates a back-end/storage request based
         on these strings using RatingsParams dataclass.
 
@@ -77,36 +69,17 @@ def setup_routes(app: FastAPI):
         Example: "2025", "05", "17", "20", "23"
         """
 
-        request_params = RequestParams(year=year,
-                                       month=month,
-                                       day=day,
-                                       start_hour=startHour,
-                                       end_hour=endHour,
-                                       channels=channels)
-
         try:
-            ratings_data: str = read_custom_ratings(file_path=return_file_path(request_params.file_path),
-                                                    time_range=request_params.time_range,
-                                                    channels=request_params.channels)
-
-            try:
-                json_content: dict = json.loads(ratings_data)
-                return JSONResponse(
-                    content=json_content,
-                    status_code=200
-                )
-            except json.JSONDecodeError as json_err:
-                logger.error(f"JSON parsing error: {json_err}")
-                return JSONResponse(
-                    status_code=500,
-                    content={"error": f"Invalid JSON format: {str(json_err)}"}
-                )
-        except FileNotFoundError:
-            logger.error(f"File not found: {request_params.file_path}")
-            return JSONResponse(
-                status_code=404,
-                content={"error": "File not found"}
+            ratings_service = RatingsService()
+            ratings_data = await ratings_service.get_ratings(
+                file_path=params.file_path,
+                time_range=params.time_range,
+                channels=params.channels
             )
+            return JSONResponse(content=ratings_data)
+        except FileNotFoundError:
+            logger.error(f"File not found: {params.file_path}")
+            return JSONResponse(status_code=404, content={"error": "File not found"})
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
             return JSONResponse(

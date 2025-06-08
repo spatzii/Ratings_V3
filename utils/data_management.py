@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-
+from fastapi import Depends
 
 @dataclass()
 class RequestParams:
@@ -67,3 +67,21 @@ Example:
         self.end_hour = (datetime.strptime(self.end_hour, format('%H')) - timedelta(hours=0, minutes=1)).strftime('%H:%M')
 
         return self.start_hour, self.end_hour
+
+    @classmethod
+    async def from_query(cls,
+                         year: str,
+                         month: str,
+                         day: str,
+                         startHour: str,
+                         endHour: str,
+                         channels: str
+                         ) -> "RequestParams":
+        return cls(
+            year=year,
+            month=month,
+            day=day,
+            start_hour=startHour,
+            end_hour=endHour,
+            channels=channels
+        )
