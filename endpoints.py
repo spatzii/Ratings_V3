@@ -1,16 +1,12 @@
-﻿import json
-
+﻿
 from fastapi import FastAPI, UploadFile, File, Request, Depends
 from fastapi.responses import JSONResponse
 
 from utils.logger import get_logger
-from analysis import read_custom_ratings
-from xlsx_to_json import is_excel_valid, prepare_json, test_firebase
+from xlsx_to_json import test_firebase
 from utils.data_management import RequestParams
-from utils.utils_endpoints import return_file_path
 from services.ratings_service import RatingsService
 
-import pandas as pd
 
 logger = get_logger(__name__)
 

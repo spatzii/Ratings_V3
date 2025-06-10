@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from fastapi import Depends
-
+from utils.config import current_config
 @dataclass()
 class RequestParams:
     """
@@ -56,7 +55,7 @@ Example:
 
     @property
     def file_path(self) -> str:
-        return f"{self.year}/{self.month}/{self.year}-{self.month}-{self.day}.json"
+        return f"{current_config.STORAGE_PATH}/{self.year}/{self.month}/{self.year}-{self.month}-{self.day}.json"
 
     @property
     def time_range(self) -> tuple[str, str]:
