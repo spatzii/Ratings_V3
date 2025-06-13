@@ -7,8 +7,6 @@ from firebase_admin import storage
 from utils.logger import get_logger
 from typing import Final
 
-from utils.json_prep import generate_storage_path, handle_storage_path, clean_ratings_data
-
 logger = get_logger(__name__)
 
 INDEX_COLUMN: Final = 'Timebands'
@@ -21,16 +19,7 @@ def is_excel_valid(ratings_df: pd.DataFrame) -> bool:
     else:
         return True
 
-
-def prepare_json(ratings_df: pd.DataFrame, original_filename: str) -> str:
-    storage_path: str = generate_storage_path(original_filename)
-    full_path: str = handle_storage_path(storage_path)
-    prepared_json: dict = clean_ratings_data(ratings_df, original_filename) #the actual file being uploaded
-    upload_json(prepared_json, full_path)
-    return full_path #returns string only for logging
-
-
-def upload_json(prepared_json: dict, output_path: str) -> None:
+def upload_json(prepared_json: dict, output_path: str) -> str:
     try:
         if current_config.STORAGE_TYPE == 'local':
             # Export to JSON
@@ -51,6 +40,8 @@ def upload_json(prepared_json: dict, output_path: str) -> None:
     except Exception as e:
         logger.error(f"Error processing {output_path}: {str(e)}", exc_info=True)
         raise
+
+    return output_path
 
 
 def json_to_df(file):

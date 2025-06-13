@@ -34,8 +34,10 @@ def setup_routes(app: FastAPI):
         contents_of_xlsx: bytes = await xlsx_file.read()
 
         try:
-            ratings_service = RatingsService()
-            result_path = await ratings_service.process_uploaded_ratings(contents_of_xlsx, xlsx_file.filename)
+            ratings_service = RatingsService(contents_of_xlsx, xlsx_file.filename)
+
+            processed_file:dict = await ratings_service.process_ratings()
+            result_path = await ratings_service.upload_ratings(processed_file)
 
             # THIS NEEDS TO BE CUSTOMIZABLE
             time_range = ("20:00", "22:59")  # You might want to make this configurable
@@ -66,8 +68,7 @@ def setup_routes(app: FastAPI):
         """
 
         try:
-            ratings_service = RatingsService()
-            ratings_data = await ratings_service.get_ratings(
+            ratings_data = await RatingsService.get_ratings(
                 file_path=params.file_path,
                 time_range=params.time_range,
                 channels=params.channels

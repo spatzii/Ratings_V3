@@ -1,22 +1,38 @@
 ﻿import os
 from pathlib import Path
 from dotenv import load_dotenv
+import json
 
 class Config:
     # Common configurations
     pass
 
 class DevelopmentConfig(Config):
+
+    ### FIREBASE
     PROJECT_ROOT = Path(__file__).parent.parent
     # Create a platform-independent path for storage
     STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
     STORAGE_TYPE = 'local'
+    ### SUPABASE
+    _key_path = PROJECT_ROOT / 'sql' / 'postgres_key.json'
+    with open(_key_path) as f:
+        _key_data = json.load(f)
+        SUPABASE_KEY = _key_data.get('SUPABASE_KEY')  # Adjust the key name based on your JSON structure
+
+    SUPABASE_URL = 'https://rfisrnemucoeijomqqxp.supabase.co'
+
 
 class ProductionConfig(Config):
+
+    ### FIREBASE
     STORAGE_TYPE = 'firebase'
     FIREBASE_BUCKET = os.getenv('FIREBASE_BUCKET')  # Gets value from .env
-    FIREBASE_CREDENTIALS = '/etc/secrets/ratings-firebase-key.json'  # Gets value from .env
+    FIREBASE_CREDENTIALS = '/etc/secrets/ratings-firebase-key.json'  # Gets value from Server (Render atm) .env
     STORAGE_PATH = os.getenv('FIREBASE_STORAGE_PATH', 'Ratings')
+    ### SUPABASE
+    SUPABASE_URL = os.getenv('SUPABASE_URL')
+    SUPABASE_KEY = '/etc/secrets/postgres_key.json'  # Gets value from .env
 
 
 # You can set this based on an environment variable
