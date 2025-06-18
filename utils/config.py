@@ -7,6 +7,18 @@ class Config:
     # Common configurations
     pass
 
+class DatabaseConfig(Config):
+    PROJECT_ROOT = Path(__file__).parent.parent
+
+    _key_path = PROJECT_ROOT / 'sql' / 'postgres_key.json'
+    with open(_key_path) as f:
+        _key_data = json.load(f)
+        SUPABASE_KEY = _key_data.get('SUPABASE_KEY')  # Adjust the key name based on your JSON structure
+
+    STORAGE_TYPE = 'sql'
+    SUPABASE_URL = 'https://rfisrnemucoeijomqqxp.supabase.co'
+
+
 class DevelopmentConfig(Config):
 
     ### FIREBASE
@@ -14,13 +26,7 @@ class DevelopmentConfig(Config):
     # Create a platform-independent path for storage
     STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
     STORAGE_TYPE = 'local'
-    ### SUPABASE
-    _key_path = PROJECT_ROOT / 'sql' / 'postgres_key.json'
-    with open(_key_path) as f:
-        _key_data = json.load(f)
-        SUPABASE_KEY = _key_data.get('SUPABASE_KEY')  # Adjust the key name based on your JSON structure
 
-    SUPABASE_URL = 'https://rfisrnemucoeijomqqxp.supabase.co'
 
 
 class ProductionConfig(Config):
@@ -39,7 +45,8 @@ class ProductionConfig(Config):
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': DevelopmentConfig,
+    'supabase': DatabaseConfig
 }
 
 
@@ -48,10 +55,10 @@ def initialize_settings():
     env = os.getenv('ENV', 'development')
 
     # Load environment variables from .env file in development
-    if env == 'development':
+    if env in ['development', 'supabase']:
         load_dotenv()
 
-    return config[env]
+    return config.get(env, config['default'])
 
 # Create a settings instance that can be imported by other modules
 current_config = initialize_settings()

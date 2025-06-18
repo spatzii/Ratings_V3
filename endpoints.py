@@ -2,14 +2,21 @@
 from fastapi import FastAPI, UploadFile, File, Request, Depends
 from fastapi.responses import JSONResponse
 
+from utils.config import current_config
 from utils.logger import get_logger
 from xlsx_to_json import test_firebase
+
+from db_utils import DatabaseService, RatingsTable
+
 from utils.data_management import RequestParams
 from services.ratings_service import RatingsService
 
+import pandas as pd
 
 logger = get_logger(__name__)
-
+# THIS NEEDS TO BE CUSTOMIZABLE
+TIME_RANGE = ["20:00", "23:00"]  # You might want to make this configurable
+CHANNELS = ["Digi 24", "Antena 3 CNN"] # Get this from your configuration or request
 
 def setup_routes(app: FastAPI):
     @app.middleware("http")
@@ -35,23 +42,27 @@ def setup_routes(app: FastAPI):
 
         try:
             ratings_service = RatingsService(contents_of_xlsx, xlsx_file.filename)
-
             processed_file:dict = await ratings_service.process_ratings()
-            result_path = await ratings_service.upload_ratings(processed_file)
 
-            # THIS NEEDS TO BE CUSTOMIZABLE
-            time_range = ("20:00", "22:59")  # You might want to make this configurable
-            channels = ["Digi 24", "Antena 3 CNN"]  # Get this from your configuration or request
+            if current_config.STORAGE_TYPE == 'sql':
+                database_service = DatabaseService(processed_file)
+                database_service.insert_tv_ratings()
+                query = (RatingsTable.from_timeframe(date=ratings_service.date,
+                                                    timeframe = TIME_RANGE,
+                                                    channels = CHANNELS).
+                         basetable())
 
-            ratings_data = await ratings_service.get_ratings(result_path, time_range, channels)
+                styled_html = query.to_html()
 
-            return JSONResponse(
-                content={
-                    "message": "File processed successfully",
-                    "path": result_path,
-                    "ratings": ratings_data
-                }
-            )
+                return JSONResponse(
+                    content={'table': styled_html,
+                             'metadata': {
+                                 'date': ratings_service.date
+                             }
+                             }
+
+                )
+
         except ValueError as ve:
             return JSONResponse(status_code=400, content={"error": str(ve)})
         except Exception as e:
@@ -68,20 +79,37 @@ def setup_routes(app: FastAPI):
         """
 
         try:
-            ratings_data = await RatingsService.get_ratings(
-                file_path=params.file_path,
-                time_range=params.time_range,
-                channels=params.channels
-            )
-            return JSONResponse(content=ratings_data)
+
+            ratings_data:pd.DataFrame = (RatingsTable.from_timeframe(date=params.request_date,
+                                                       timeframe=params.time_range,
+                                                       channels=params.channels
+                                                       )
+                            .basetable())
+
+            styled_html = ratings_data.to_html()
+
+            response_data = {
+                'table': styled_html,
+                'metadata': {
+                    'date': params.request_date
+                }
+            }
+
+
+            # ratings_data = await RatingsService.get_ratings(
+            #     file_path=params.file_path,
+            #     time_range=params.time_range,
+            #     channels=params.channels
+            # )
+            return JSONResponse(content=response_data)
         except FileNotFoundError:
-            logger.error(f"File not found: {params.file_path}")
-            return JSONResponse(status_code=404, content={"error": "File not found"})
+            logger.error(f"Request date not found: {params.request_date}")
+            return JSONResponse(status_code=404, content={"error": "Date not in database"})
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
             return JSONResponse(
                 status_code=500,
-                content={"error": f"Error processing file: {str(e)}"}
+                content={"error": f"Error processing request: {str(e)}"}
             )
 
     @app.get("/test_firebase")

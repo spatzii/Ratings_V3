@@ -9,14 +9,11 @@ logger = get_logger(__name__)
 INDEX_COLUMN: Final = 'Timebands'
 
 
-def clean_ratings_data(dataframe, date:tuple[str, str, str]) -> dict:
-    year, month, day = date
-
-    file_format_from_date: str = f"{year}-{month}-{day}"
+def clean_ratings_data(dataframe, date:str) -> dict:
 
     dataframe.columns = [col.replace('.1', '') for col in dataframe.columns]
     dataframe.index = pd.to_datetime([
-        fix_broadcast_time(idx, file_format_from_date) for idx in dataframe.index
+        fix_broadcast_time(idx, date) for idx in dataframe.index
     ])
     dataframe = dataframe[~dataframe.index.isna()]
 

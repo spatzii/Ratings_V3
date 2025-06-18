@@ -11,7 +11,7 @@ class StorageService:
         self.filename = filename
 
     def extract_date(self) -> tuple[str, str, str]:
-        """Extract year, month, day from the filename in YYYY-MM-DD format."""
+        """Extract year, month, day from the filename and returns a tuple in the (YYYY), (MM), (DD) format."""
         date_str = str(self.filename).split(' ')[-1].replace('.xlsx', '')
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
         return (str(date_obj.year),

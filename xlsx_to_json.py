@@ -7,6 +7,8 @@ from firebase_admin import storage
 from utils.logger import get_logger
 from typing import Final
 
+from utils.supabase_init import supabase as db
+
 logger = get_logger(__name__)
 
 INDEX_COLUMN: Final = 'Timebands'
@@ -21,6 +23,7 @@ def is_excel_valid(ratings_df: pd.DataFrame) -> bool:
 
 def upload_json(prepared_json: dict, output_path: str) -> str:
     try:
+
         if current_config.STORAGE_TYPE == 'local':
             # Export to JSON
             with open(Path(output_path), 'w', encoding='utf-8') as f:

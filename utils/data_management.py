@@ -21,15 +21,14 @@ Attributes:
 Properties:
     file_path: Constructs a storage path in the format "YYYY/MM/YYYY-MM-DD.json"
 
-    time_range: Returns a tuple of formatted time strings (HH:MM, HH:MM), with end_hour
-               adjusted by -1 minute to match rating reading intervals
+    time_range: Returns a list of formatted time strings [HH:MM, HH:MM]
 
 Example:
     >>> params = RequestParams("2025", "05", "17", "20", "23", 'Digi 24,Antena 3 CNN')
-    >>> params.file_path
-    '2025/05/2025-05-17.json'
+    >>> params.request_date
+    '2025/05/2025-05-17'
     >>> params.time_range
-    ('20:00', '22:59')
+    ['20:00', '23:00']
     >>> params.channels
     ['Digi 24', 'Antena 3 CNN']
 """
@@ -54,18 +53,15 @@ Example:
             self.channels = [c.strip() for c in self.channels.split(',')]
 
     @property
-    def file_path(self) -> str:
-        return f"{current_config.STORAGE_PATH}/{self.year}/{self.month}/{self.year}-{self.month}-{self.day}.json"
+    def request_date(self) -> str:
+        return f"{self.year}-{self.month}-{self.day}"
 
     @property
-    def time_range(self) -> tuple[str, str]:
+    def time_range(self) -> list[str]:
         self.start_hour = datetime.strptime(self.start_hour, format('%H')).strftime('%H:%M')
+        self.end_hour = datetime.strptime(self.end_hour, format('%H')).strftime('%H:%M')
 
-        ### Remove 1 minute from incoming end_hour so it matches rating reading
-        # i.e., from 20:00 to 22:59, not 20:00 to 23:00.
-        self.end_hour = (datetime.strptime(self.end_hour, format('%H')) - timedelta(hours=0, minutes=1)).strftime('%H:%M')
-
-        return self.start_hour, self.end_hour
+        return [self.start_hour, self.end_hour]
 
     @classmethod
     async def from_query(cls,
