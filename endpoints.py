@@ -6,6 +6,8 @@ from utils.config import current_config
 from utils.logger import get_logger
 from xlsx_to_json import test_firebase
 
+from postgrest.exceptions import APIError
+
 from db_utils import DatabaseService, RatingsTable
 
 from utils.data_management import RequestParams
@@ -46,7 +48,17 @@ def setup_routes(app: FastAPI):
 
             if current_config.STORAGE_TYPE == 'sql':
                 database_service = DatabaseService(processed_file)
-                database_service.insert_tv_ratings()
+
+                try:
+                    database_service.insert_tv_ratings()
+                except APIError as e:
+                    if 'tv_ratings_Timebands_key' in str(e):
+                        return JSONResponse(
+                            status_code=409,
+                            content={"message": "File already uploaded"}
+                        )
+                    raise
+
                 query = (RatingsTable.from_timeframe(date=ratings_service.date,
                                                     timeframe = TIME_RANGE,
                                                     channels = CHANNELS).

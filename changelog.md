@@ -3,8 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
-[0.4.0] - 2025-06-18 
--
+[0.4.1] - 2025-06-19 
+- Error handling for duplicate SQL entries
+[0.4.0] - 2025-06-18
 - Moved backend storage to SQL (Supabase)
 - Reworked backend flow to account for database 
 - Legacy code still in place
