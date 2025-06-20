@@ -46,7 +46,7 @@ class ProductionConfig(Config):
     STORAGE_PATH = os.getenv('FIREBASE_STORAGE_PATH', 'Ratings')
     ### SUPABASE
     SUPABASE_URL = os.getenv('SUPABASE_URL')
-    SUPABASE_KEY = '/etc/secrets/postgres_key.json'  # Gets value from .env
+    SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 
 # You can set this based on an environment variable
