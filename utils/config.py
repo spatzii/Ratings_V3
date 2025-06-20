@@ -7,8 +7,11 @@ class Config:
     # Common configurations
     pass
 
-class DatabaseConfig(Config):
+class DevelopmentConfig(Config):
+
     PROJECT_ROOT = Path(__file__).parent.parent
+    # Create a platform-independent path for storage
+    # STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
 
     # Read from environment variable instead of file
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
@@ -26,35 +29,28 @@ class DatabaseConfig(Config):
     STORAGE_TYPE = 'sql'
     SUPABASE_URL = 'https://rfisrnemucoeijomqqxp.supabase.co'
 
-
-class DevelopmentConfig(Config):
-
-    ### FIREBASE
-    PROJECT_ROOT = Path(__file__).parent.parent
-    # Create a platform-independent path for storage
-    STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
-    STORAGE_TYPE = 'local'
+    TEST_NAME = "Development"
 
 
 
 class ProductionConfig(Config):
 
+    PROJECT_ROOT = Path(__file__).parent.parent
     ### FIREBASE
-    STORAGE_TYPE = 'firebase'
+    STORAGE_TYPE = 'sql'
     FIREBASE_BUCKET = os.getenv('FIREBASE_BUCKET')  # Gets value from .env
     FIREBASE_CREDENTIALS = '/etc/secrets/ratings-firebase-key.json'  # Gets value from Server (Render atm) .env
-    STORAGE_PATH = os.getenv('FIREBASE_STORAGE_PATH', 'Ratings')
     ### SUPABASE
     SUPABASE_URL = os.getenv('SUPABASE_URL')
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
+    TEST_NAME = "Production"
 
 # You can set this based on an environment variable
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
-    'supabase': DatabaseConfig
 }
 
 

@@ -1,13 +1,11 @@
-from analysis import read_custom_ratings
-from xlsx_to_json import is_excel_valid, upload_json
-
-from services.storage_service import StorageService
-from utils.json_prep import clean_ratings_data
-
-from typing import Dict, Any
-import json
+from datetime import datetime
+from typing import Final
 import pandas as pd
+from utils.logger import get_logger
 
+
+logger = get_logger(__name__)
+INDEX_COLUMN: Final = 'Timebands'
 
 class RatingsService:
     """Service for processing, uploading, and retrieving TV ratings data from Excel files.
@@ -24,7 +22,6 @@ class RatingsService:
             filename (str): Name of the Excel file [Digi 24-audiente zilnice la minut YYYY-MM-DD.xlsx]
         """
         self.filename = filename
-        self.storage_service = StorageService(self.filename)
         self.contents = contents
 
     async def process_ratings(self) -> dict:
@@ -45,45 +42,68 @@ class RatingsService:
                                            index_col=0,
                                            usecols=[0] + list(range(19, 37)))
 
-        if not is_excel_valid(xlsx_ratings_sheet):
+        if not RatingsService.is_excel_valid(xlsx_ratings_sheet):
             raise ValueError("Invalid Excel format")
 
-        return clean_ratings_data(xlsx_ratings_sheet, self.date)
-
-    async def upload_ratings(self, df_as_dict):
-        """Upload processed ratings data to storage.
-
-        Args:
-            df_as_dict: Dictionary containing the processed ratings data
-
-        Returns:
-            str: Storage path where the data was uploaded
-        """
-        return upload_json(df_as_dict, self.storage_service.storage_path())
+        return RatingsService.clean_ratings_data(xlsx_ratings_sheet, self.date)
 
     @staticmethod
-    async def get_ratings(file_path: str, time_range: tuple[str, str], channels: list[str]) -> Dict[str, Any]:
-        """Retrieve and process ratings data for specific channels and time ranges.
+    def clean_ratings_data(dataframe: pd.DataFrame, date: str) -> dict:
+        dataframe.columns = [col.replace('.1', '') for col in dataframe.columns]
+        dataframe.index = pd.to_datetime([
+            RatingsService.fix_broadcast_time(idx, date) for idx in dataframe.index
+        ])
+        dataframe = dataframe[~dataframe.index.isna()]
 
-        Args:
-            file_path (str): Path to the JSON file containing ratings data
-            time_range (tuple[str, str]): Tuple of (start_time, end_time) in "HH:MM" format
-            channels (list[str]): List of channel names to retrieve ratings for
+        # Prepare for JSON export
+        dataframe.index.name = INDEX_COLUMN
+        dataframe = dataframe.reset_index()
+        dataframe[INDEX_COLUMN] = dataframe[INDEX_COLUMN].dt.strftime('%Y-%m-%d %H:%M')
 
-        Returns:
-            Dict[str, Any]: JSON-formatted ratings data containing resampled and mean values
+        schema = {
+            "fields": [
+                {"name": col, "type": "string" if col == INDEX_COLUMN else "number"}
+                for col in dataframe.columns
+            ]
+        }
+        json_data = {
+            "schema": schema,
+            "data": dataframe.to_dict('records')
+        }
+        return json_data
 
-        Example:
-            >>>   RatingsService.get_ratings(
-            ...     "ratings/2025-06-13.json",
-            ...     ("20:00", "22:59"),
-            ...     ["Channel1", "Channel2"]
-            ... )
-        """
-        result = read_custom_ratings(file_path, time_range, channels)
-        return json.loads(result)
+    @staticmethod
+    def fix_broadcast_time(timestring: str, date_of_file: str) -> str | None:
+        """Convert time strings like '24:00' to next day datetime."""
+        try:
+            hour, minute = map(int, timestring.split(':'))
+            if hour >= 24:
+                hour -= 24
+                next_day = pd.to_datetime(date_of_file) + pd.Timedelta(days=1)
+                return f'{next_day.strftime("%Y-%m-%d")} {hour:02d}:{minute:02d}'
+            return f'{date_of_file} {hour:02d}:{minute:02d}'
+        except:
+            return None
+
+    @staticmethod
+    def is_excel_valid(ratings_df: pd.DataFrame) -> bool:
+        if ratings_df.columns[4] != "Digi 24.1":
+            logger.info("XLSX Validation Error!")
+            return False
+        else:
+            return True
+
+
+    ### TODO: These two need to be joined
+    def extract_date(self) -> tuple[str, str, str]:
+        """Extract year, month, day from the filename and returns a tuple in the (YYYY), (MM), (DD) format."""
+        date_str = str(self.filename).split(' ')[-1].replace('.xlsx', '')
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        return (str(date_obj.year),
+                f"{date_obj.month:02d}",
+                f"{date_obj.day:02d}")
 
     @property
     def date(self) -> str:
-        dates:tuple = self.storage_service.extract_date()
+        dates:tuple = self.extract_date()
         return f"{dates[0]}-{dates[1]}-{dates[2]}" ### 2025-06-12

@@ -1,7 +1,7 @@
-from utils.supabase_init import supabase as db
+from sql.supabase_init import supabase as db
 from utils.logger import get_logger
 from postgrest import APIResponse
-from typing import List, Dict, Optional
+from typing import List, Dict
 import pandas as pd
 from datetime import datetime
 

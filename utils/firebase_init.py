@@ -1,7 +1,7 @@
 ﻿import firebase_admin
 import os
 
-from firebase_admin import credentials
+from firebase_admin import credentials, storage
 from utils.config import current_config
 from utils.logger import get_logger
 
@@ -27,4 +27,25 @@ def initialize_firebase():
         except Exception as e:
             logger.error(f"Firebase initialization error: {str(e)}")
             raise
+
+def test_firebase():
+    if current_config.STORAGE_TYPE == 'firebase':
+        try:
+            bucket = storage.bucket()
+            logger.info(f"Testing connection to bucket: {bucket.name}")
+            return {
+                "status": "success",
+                "message": f"Successfully connected to Firebase bucket: {bucket.name}"
+            }
+        except Exception as e:
+            logger.error(f"Firebase connection test failed: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Firebase connection failed: {str(e)}"
+            }
+    else:
+        return {
+            "status": "error",
+            "message": "Firebase storage is not configured"
+        }
 

@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+[0.4.2] - 2025-06-20 
+- 
+- Removed (almost) all references to Firebase storage
+- Consolidated logic in fewer, more robust classes
+- Deleted redunandat modules
+
 [0.4.1] - 2025-06-19 
 - Error handling for duplicate SQL entries
 [0.4.0] - 2025-06-18

@@ -2,15 +2,14 @@
 from fastapi import FastAPI, UploadFile, File, Request, Depends
 from fastapi.responses import JSONResponse
 
-from utils.config import current_config
 from utils.logger import get_logger
-from xlsx_to_json import test_firebase
+from utils.firebase_init import test_firebase
 
 from postgrest.exceptions import APIError
 
-from db_utils import DatabaseService, RatingsTable
+from services.database_service import DatabaseService, RatingsTable
 
-from utils.data_management import RequestParams
+from utils.reqest_management import RequestParams
 from services.ratings_service import RatingsService
 
 import pandas as pd
@@ -45,35 +44,33 @@ def setup_routes(app: FastAPI):
         try:
             ratings_service = RatingsService(contents_of_xlsx, xlsx_file.filename)
             processed_file:dict = await ratings_service.process_ratings()
+            database_service = DatabaseService(processed_file)
 
-            if current_config.STORAGE_TYPE == 'sql':
-                database_service = DatabaseService(processed_file)
+            try:
+                database_service.insert_tv_ratings()
+            except APIError as e:
+                if 'tv_ratings_Timebands_key' in str(e):
+                    return JSONResponse(
+                        status_code=409,
+                        content={"message": "File already uploaded"}
+                    )
+                raise
 
-                try:
-                    database_service.insert_tv_ratings()
-                except APIError as e:
-                    if 'tv_ratings_Timebands_key' in str(e):
-                        return JSONResponse(
-                            status_code=409,
-                            content={"message": "File already uploaded"}
-                        )
-                    raise
+            query = (RatingsTable.from_timeframe(date=ratings_service.date,
+                                                timeframe = TIME_RANGE,
+                                                channels = CHANNELS).
+                     basetable())
 
-                query = (RatingsTable.from_timeframe(date=ratings_service.date,
-                                                    timeframe = TIME_RANGE,
-                                                    channels = CHANNELS).
-                         basetable())
+            styled_html = query.to_html()
 
-                styled_html = query.to_html()
+            return JSONResponse(
+                content={'table': styled_html,
+                         'metadata': {
+                             'date': ratings_service.date
+                         }
+                         }
 
-                return JSONResponse(
-                    content={'table': styled_html,
-                             'metadata': {
-                                 'date': ratings_service.date
-                             }
-                             }
-
-                )
+            )
 
         except ValueError as ve:
             return JSONResponse(status_code=400, content={"error": str(ve)})
@@ -106,13 +103,6 @@ def setup_routes(app: FastAPI):
                     'date': params.request_date
                 }
             }
-
-
-            # ratings_data = await RatingsService.get_ratings(
-            #     file_path=params.file_path,
-            #     time_range=params.time_range,
-            #     channels=params.channels
-            # )
             return JSONResponse(content=response_data)
         except FileNotFoundError:
             logger.error(f"Request date not found: {params.request_date}")
