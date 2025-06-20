@@ -32,8 +32,8 @@ app.add_middleware(
 
 setup_routes(app)
 
-print("Debug Information:")
-print(f"ENV variable: {os.getenv('ENV')}")
-print(f"Config class: {current_config.__class__.__name__}")
-print(f"Storage type: {current_config.STORAGE_TYPE}")
-print(f"Project root: {current_config.PROJECT_ROOT}")
+# print("Debug Information:")
+# print(f"ENV variable: {os.getenv('ENV')}")
+# print(f"Config class: {current_config.__class__.__name__}")
+# print(f"Storage type: {current_config.STORAGE_TYPE}")
+# print(f"Project root: {current_config.PROJECT_ROOT}")
