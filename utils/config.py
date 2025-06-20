@@ -10,10 +10,18 @@ class Config:
 class DatabaseConfig(Config):
     PROJECT_ROOT = Path(__file__).parent.parent
 
-    _key_path = PROJECT_ROOT / 'sql' / 'postgres_key.json'
-    with open(_key_path) as f:
-        _key_data = json.load(f)
-        SUPABASE_KEY = _key_data.get('SUPABASE_KEY')  # Adjust the key name based on your JSON structure
+    # Read from environment variable instead of file
+    SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+    if not SUPABASE_KEY:
+        # Only try to read from file if env var is not set (development environment)
+        try:
+            _key_path = PROJECT_ROOT / 'sql' / 'postgres_key.json'
+            with open(_key_path) as f:
+                _key_data = json.load(f)
+                SUPABASE_KEY = _key_data.get('SUPABASE_KEY')
+        except FileNotFoundError:
+            # Handle the case when neither env var nor file exists
+            SUPABASE_KEY = None
 
     STORAGE_TYPE = 'sql'
     SUPABASE_URL = 'https://rfisrnemucoeijomqqxp.supabase.co'
