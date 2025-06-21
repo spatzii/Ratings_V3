@@ -1,6 +1,5 @@
 ﻿from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-from utils.firebase_init import initialize_firebase
 from contextlib import asynccontextmanager
 
 from endpoints import setup_routes
@@ -37,3 +36,8 @@ print(f"Config class: {current_config.__class__.__name__}")
 print(f"Storage type: {current_config.STORAGE_TYPE}")
 print(f"Project root: {current_config.PROJECT_ROOT}")
 print(f"Project config: {current_config.TEST_NAME}")
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
