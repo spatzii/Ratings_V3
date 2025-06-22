@@ -1,7 +1,10 @@
-﻿fastapi~=0.109.0  # Update to latest stable version
+﻿fastapi~=0.115.12  # Update to latest stable version
 uvicorn~=0.27.0   # Add version constraint
 pandas~=2.2.3     # Current version is recent
 openpyxl~=3.1.2   # Add version constraint
-python-multipart~=0.0.9  # Add version constraint
+python-multipart~=0.0.20  # Add version constraint
 python-dotenv~=1.1.0     # Current version
 firebase-admin~=6.8.0    # Current version
+supabase~=2.15.2
+requests~=2.32.3
+postgrest~=1.0.2

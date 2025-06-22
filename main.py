@@ -1,19 +1,28 @@
-﻿from fastapi import FastAPI, UploadFile, File, Header, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
-from firebase_init import initialize_firebase
+﻿from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 
-from endpoints import setup_routes
+from api.v1.router import api_router
+
+from utils.config import current_config
+import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup code
-    initialize_firebase()
     yield
     # Shutdown code (if any)
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan,
+              openapi_url = "/openapi.json"
+)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    return response
+
 
 # Add CORS middleware to allow requests from your Firebase app
 # noinspection PyTypeChecker
@@ -27,5 +36,16 @@ app.add_middleware(
     max_age=3600,
 )
 
-setup_routes(app)
+app.include_router(api_router, prefix="/api/v1")
 
+print("Debug Information:")
+print(f"ENV variable: {os.getenv('ENV')}")
+print(f"Config class: {current_config.__class__.__name__}")
+print(f"Storage type: {current_config.STORAGE_TYPE}")
+print(f"Project root: {current_config.PROJECT_ROOT}")
+print(f"Project config: {current_config.TEST_NAME}")
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
