@@ -3,8 +3,11 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
-[0.4.2] - 2025-06-20 
-- 
+[0.4.3] - 2025-06-22 
+- Migrated to SQL database
+- Added endpoints module archictecture for FastAPI
+
+[0.4.2] - 2025-06-20
 - Removed (almost) all references to Firebase storage
 - Consolidated logic in fewer, more robust classes
 - Deleted redunandat modules

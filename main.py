@@ -1,8 +1,9 @@
 ﻿from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 
-from endpoints import setup_routes
+from api.v1.router import api_router
+
 from utils.config import current_config
 import os
 
@@ -16,6 +17,13 @@ app = FastAPI(lifespan=lifespan,
               openapi_url = "/openapi.json"
 )
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    return response
+
+
 # Add CORS middleware to allow requests from your Firebase app
 # noinspection PyTypeChecker
 app.add_middleware(
@@ -28,7 +36,7 @@ app.add_middleware(
     max_age=3600,
 )
 
-setup_routes(app)
+app.include_router(api_router, prefix="/api/v1")
 
 print("Debug Information:")
 print(f"ENV variable: {os.getenv('ENV')}")
