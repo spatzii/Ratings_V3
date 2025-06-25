@@ -6,6 +6,7 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 INDEX_COLUMN: Final = 'Timebands'
+CHANNELS: Final = [0, 19, 21, 22, 23, 24, 25, 27, 33, 34, 35, 36]
 
 class RatingsService:
     """Service for processing, uploading, and retrieving TV ratings data from Excel files.
@@ -37,10 +38,10 @@ class RatingsService:
             ValueError: If the Excel file format is invalid
         """
         xlsx_ratings_sheet = pd.read_excel(self.contents,  # type: ignore
-                                           sheet_name=2,
+                                           sheet_name=2, # Periods(U21-59 + g)
                                            header=2,
                                            index_col=0,
-                                           usecols=[0] + list(range(19, 37)))
+                                           usecols=CHANNELS)
 
         if not RatingsService.is_excel_valid(xlsx_ratings_sheet):
             raise ValueError("Invalid Excel format")
@@ -87,7 +88,7 @@ class RatingsService:
 
     @staticmethod
     def is_excel_valid(ratings_df: pd.DataFrame) -> bool:
-        if ratings_df.columns[4] != "Digi 24.1":
+        if ratings_df.columns[3] != "Digi 24.1":
             logger.info("XLSX Validation Error!")
             return False
         else:
