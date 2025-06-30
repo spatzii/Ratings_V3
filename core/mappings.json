@@ -1,0 +1,462 @@
+﻿{
+  "channels": [
+    {
+      "id": 1,
+      "name": "TTV"
+    },
+    {
+      "id": 2,
+      "name": "B1TV"
+    },
+    {
+      "id": 3,
+      "name": "Romania TV"
+    },
+    {
+      "id": 4,
+      "name": "Digi 24"
+    },
+    {
+      "id": 5,
+      "name": "Antena 3 CNN"
+    },
+    {
+      "id": 6,
+      "name": "Realitatea Plus"
+    },
+    {
+      "id": 7,
+      "name": "EuroNews"
+    },
+    {
+      "id": 8,
+      "name": "TVR 1"
+    },
+    {
+      "id": 9,
+      "name": "Antena 1"
+    },{
+      "id": 10,
+      "name": "Pro TV"
+    },{
+      "id": 11,
+      "name": "DigiSport 1"
+    }
+
+
+  ],
+
+
+  "weekday_time_blocks": [
+    {
+      "show_name": "Digimatinal",
+      "start_time": "06:00",
+      "end_time": "09:00"
+    },
+    {
+      "show_name": "Stiri ora 9",
+      "start_time": "09:00",
+      "end_time": "10:00"
+    },
+    {
+      "show_name": "Stiri ora 10",
+      "start_time": "10:00",
+      "end_time": "11:00"
+    },
+    {
+      "show_name": "Stiri ora 11",
+      "start_time": "11:00",
+      "end_time": "12:00"
+    },
+    {
+      "show_name": "Stiri ora 12",
+      "start_time": "12:00",
+      "end_time": "13:00"
+    },
+    {
+      "show_name": "Stiri ora 13",
+      "start_time": "13:00",
+      "end_time": "14:00"
+    },
+    {
+      "show_name": "Stiri ora 14",
+      "start_time": "14:00",
+      "end_time": "15:00"
+    },
+    {
+      "show_name": "Studio Politic",
+      "start_time": "15:00",
+      "end_time": "16:00"
+    },
+    {
+      "show_name": "Stiri ora 16",
+      "start_time": "16:00",
+      "end_time": "17:00"
+    },
+    {
+      "show_name": "Stiri ora 17",
+      "start_time": "17:00",
+      "end_time": "18:00"
+    },
+    {
+      "show_name": "Editie Speciala",
+      "start_time": "18:00",
+      "end_time": "20:00"
+    },
+    {
+      "show_name": "Jurnalul de Seara",
+      "start_time": "20:00",
+      "end_time": "23:00"
+    },
+    {
+      "show_name": "Stiri ora 23",
+      "start_time": "23:00",
+      "end_time": "00:00"
+    },
+    {
+      "show_name": "Stiri ora 0",
+      "start_time": "00:00",
+      "end_time": "01:00"
+    },
+    {
+      "show_name": "Reluari",
+      "start_time": "01:00",
+      "end_time": "06:00"
+    }
+  ],
+  "friday_time_blocks": [
+    {
+      "show_name": "Stiri ora 6",
+      "start_time": "06:00",
+      "end_time": "07:00"
+    },
+    {
+      "show_name": "Stiri ora 7",
+      "start_time": "07:00",
+      "end_time": "08:00"
+    },
+    {
+      "show_name": "Stiri ora 8",
+      "start_time": "08:00",
+      "end_time": "09:00"
+    },
+    {
+      "show_name": "Stiri ora 9",
+      "start_time": "09:00",
+      "end_time": "10:00"
+    },
+    {
+      "show_name": "Stiri ora 10",
+      "start_time": "10:00",
+      "end_time": "11:00"
+    },
+    {
+      "show_name": "Stiri ora 11",
+      "start_time": "11:00",
+      "end_time": "11:30"
+    },
+    {
+      "show_name": "Pasaport Diplomatic",
+      "start_time": "11:30",
+      "end_time": "12:00"
+    },
+    {
+      "show_name": "Stiri ora 12",
+      "start_time": "12:00",
+      "end_time": "13:00"
+    },
+    {
+      "show_name": "Stiri ora 13",
+      "start_time": "13:00",
+      "end_time": "14:00"
+    },
+    {
+      "show_name": "Stiri ora 14",
+      "start_time": "14:00",
+      "end_time": "15:00"
+    },
+    {
+      "show_name": "Stiri ora 15",
+      "start_time": "15:00",
+      "end_time": "16:00"
+    },
+    {
+      "show_name": "Stiri ora 16",
+      "start_time": "16:00",
+      "end_time": "17:00"
+    },
+    {
+      "show_name": "Stiri ora 17",
+      "start_time": "17:00",
+      "end_time": "18:00"
+    },
+    {
+      "show_name": "LIVE",
+      "start_time": "18:00",
+      "end_time": "20:00"
+    },
+    {
+      "show_name": "Editie Speciala",
+      "start_time": "20:00",
+      "end_time": "22:00"
+    },
+    {
+      "show_name": "Stiri ora 22",
+      "start_time": "22:00",
+      "end_time": "22:30"
+    },
+    {
+      "show_name": "Focus Europa",
+      "start_time": "22:30",
+      "end_time": "23:00"
+    },
+    {
+      "show_name": "Stiri ora 23",
+      "start_time": "23:00",
+      "end_time": "00:00"
+    },
+    {
+      "show_name": "Stiri ora 0",
+      "start_time": "00:00",
+      "end_time": "01:00"
+    },
+    {
+      "show_name": "Reluari",
+      "start_time": "01:00",
+      "end_time": "06:00"
+    }
+  ],
+  "saturday_time_blocks": [
+    {
+      "show_name": "Stiri ora 6",
+      "start_time": "06:00",
+      "end_time": "07:00"
+    },
+    {
+      "show_name": "Stiri ora 7",
+      "start_time": "07:00",
+      "end_time": "08:00"
+    },
+    {
+      "show_name": "Stiri ora 8",
+      "start_time": "08:00",
+      "end_time": "09:00"
+    },
+    {
+      "show_name": "Stiri ora 9",
+      "start_time": "09:00",
+      "end_time": "10:00"
+    },
+    {
+      "show_name": "Stiri ora 10",
+      "start_time": "10:00",
+      "end_time": "11:00"
+    },
+    {
+      "show_name": "Stiri ora 11",
+      "start_time": "11:00",
+      "end_time": "12:00"
+    },
+    {
+      "show_name": "Stiri ora 12",
+      "start_time": "12:00",
+      "end_time": "12:30"
+    },
+    {
+      "show_name": "La Volan",
+      "start_time": "12:30",
+      "end_time": "13:00"
+    },
+    {
+      "show_name": "Stiri ora 13",
+      "start_time": "13:00",
+      "end_time": "14:00"
+    },
+    {
+      "show_name": "In fata ta",
+      "start_time": "14:00",
+      "end_time": "15:00"
+    },
+    {
+      "show_name": "Stiri ora 15",
+      "start_time": "15:00",
+      "end_time": "16:00"
+    },
+    {
+      "show_name": "Stiri ora 16",
+      "start_time": "16:00",
+      "end_time": "16:30"
+    },
+    {
+      "show_name": "Scena Deschisa",
+      "start_time": "16:30",
+      "end_time": "17:00"
+    },
+    {
+      "show_name": "Stiri ora 17",
+      "start_time": "17:00",
+      "end_time": "17:30"
+    },
+    {
+      "show_name": "Tinere fara Batranete",
+      "start_time": "17:30",
+      "end_time": "18:00"
+    },
+    {
+      "show_name": "Stiri ora 18",
+      "start_time": "18:00",
+      "end_time": "18:30"
+    },
+    {
+      "show_name": "Temerarii",
+      "start_time": "18:30",
+      "end_time": "19:00"
+    },
+    {
+      "show_name": "Stiri ora 19",
+      "start_time": "19:00",
+      "end_time": "19:30"
+    },
+    {
+      "show_name": "Focus Europa",
+      "start_time": "19:30",
+      "end_time": "20:00"
+    },
+    {
+      "show_name": "Stiri ora 20",
+      "start_time": "20:00",
+      "end_time": "21:00"
+    },
+    {
+      "show_name": "La Cina",
+      "start_time": "21:00",
+      "end_time": "22:00"
+    },
+    {
+      "show_name": "Stiri ora 22",
+      "start_time": "22:00",
+      "end_time": "22:30"
+    },
+    {
+      "show_name": "Filmul romanesc",
+      "start_time": "22:30",
+      "end_time": "01:00"
+    },
+    {
+      "show_name": "Reluari",
+      "start_time": "01:00",
+      "end_time": "06:00"
+    }
+  ],
+  "sunday_time_blocks": [
+    {
+      "show_name": "Stiri ora 6",
+      "start_time": "06:00",
+      "end_time": "07:00"
+    },
+    {
+      "show_name": "Stiri ora 7",
+      "start_time": "07:00",
+      "end_time": "08:00"
+    },
+    {
+      "show_name": "Stiri ora 8",
+      "start_time": "08:00",
+      "end_time": "09:00"
+    },
+    {
+      "show_name": "Agrojurnal",
+      "start_time": "09:00",
+      "end_time": "10:00"
+    },
+    {
+      "show_name": "Stiri ora 10",
+      "start_time": "10:00",
+      "end_time": "11:00"
+    },
+    {
+      "show_name": "Stiri ora 11",
+      "start_time": "11:00",
+      "end_time": "12:00"
+    },
+    {
+      "show_name": "Stiri ora 12",
+      "start_time": "12:00",
+      "end_time": "13:00"
+    },
+    {
+      "show_name": "Stiri ora 13",
+      "start_time": "13:00",
+      "end_time": "13:30"
+    },
+    {
+      "show_name": "Gadget 2.0",
+      "start_time": "13:30",
+      "end_time": "14:00"
+    },
+    {
+      "show_name": "In fata ta",
+      "start_time": "14:00",
+      "end_time": "15:00"
+    },
+    {
+      "show_name": "Stiri ora 15",
+      "start_time": "15:00",
+      "end_time": "16:00"
+    },
+    {
+      "show_name": "Stiri ora 16",
+      "start_time": "16:00",
+      "end_time": "17:00"
+    },
+    {
+      "show_name": "Stiri ora 17",
+      "start_time": "17:00",
+      "end_time": "17:30"
+    },
+    {
+      "show_name": "Planeta esti tu",
+      "start_time": "17:30",
+      "end_time": "18:00"
+    },
+    {
+      "show_name": "Stiri ora 18",
+      "start_time": "18:00",
+      "end_time": "19:00"
+    },
+    {
+      "show_name": "Stiri ora 19",
+      "start_time": "19:00",
+      "end_time": "19:30"
+    },
+    {
+      "show_name": "Focus Romania",
+      "start_time": "19:30",
+      "end_time": "20:00"
+    },
+    {
+      "show_name": "Briefing",
+      "start_time": "20:00",
+      "end_time": "23:00"
+    },
+    {
+      "show_name": "Stiri ora 23",
+      "start_time": "23:00",
+      "end_time": "00:00"
+    },
+    {
+      "show_name": "Digipedia",
+      "start_time": "00:00",
+      "end_time": "01:00"
+    },
+    {
+      "show_name": "Reluari",
+      "start_time": "01:00",
+      "end_time": "06:00"
+    }
+  ]
+}
+
+
+
+

@@ -1,4 +1,4 @@
-from sql.supabase_init import supabase as db
+from sql.supabase_init import supabase
 from utils.logger import get_logger
 from postgrest import APIResponse
 from typing import List, Dict
@@ -7,19 +7,20 @@ from datetime import datetime
 
 logger = get_logger(__name__)
 
-RATINGS_TABLE = db.table('tv_ratings')
+RATINGS_TABLE = supabase.table('ratings')
 INDEX = 'Timebands'
 RESAMPLE_INTERVAL = '15min'
 DECIMAL_PRECISION = 2
 
 class DatabaseService:
 
-    def __init__(self, daily_ratings:dict):
-        self.daily_ratings = daily_ratings.get('data')
+    def __init__(self, daily_ratings:list[dict]):
+        self.daily_ratings = daily_ratings
 
     def insert_tv_ratings(self):
         RATINGS_TABLE.insert(self.daily_ratings).execute()
         logger.info("Insert successful!")
+        supabase.rpc('update_show_names_for_date', {'target_date': '2025-06-27'}).execute()
 
 
 class RatingsTable:

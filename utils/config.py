@@ -29,7 +29,7 @@ class DevelopmentConfig(Config):
     STORAGE_TYPE = 'sql'
     SUPABASE_URL = 'https://rfisrnemucoeijomqqxp.supabase.co'
 
-    TEST_NAME = "Development"
+    SCHEMA = 'C:/Users/panas/PycharmProjects/ratings_backend/core/mappings.json'
 
 
 
@@ -44,7 +44,8 @@ class ProductionConfig(Config):
     SUPABASE_URL = os.getenv('SUPABASE_URL')
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-    TEST_NAME = "Production"
+    SCHEMA = os.getenv('mappings.json')
+
 
 # You can set this based on an environment variable
 config = {
