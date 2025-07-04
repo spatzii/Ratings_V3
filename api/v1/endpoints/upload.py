@@ -3,7 +3,7 @@ from . import (
     UploadFile,
     File,
     JSONResponse,
-    RatingsService,
+    RatingsFileService,
     DatabaseService,
     RatingsTable,
     APIError
@@ -20,14 +20,15 @@ async def upload_xlsx(xlsx_file: UploadFile = File(...)):
     contents_of_xlsx: bytes = await xlsx_file.read()
 
     try:
-        ratings_service = RatingsService(contents_of_xlsx, xlsx_file.filename)
-        processed_file: dict = await ratings_service.process_ratings()
-        database_service = DatabaseService(processed_file)
+        ratings_service = RatingsFileService(contents_of_xlsx, xlsx_file.filename)
+        processed_file: dict = await ratings_service.process_ratings_file()
+        melted_file: list[dict] = ratings_service.pivot_datatable(processed_file)
+        database_service = DatabaseService(melted_file)
 
         try:
             database_service.insert_tv_ratings()
         except APIError as e:
-            if 'tv_ratings_Timebands_key' in str(e):
+            if 'ratings_Timebands_key' in str(e):
                 return JSONResponse(
                     status_code=409,
                     content={"message": "File already uploaded"}

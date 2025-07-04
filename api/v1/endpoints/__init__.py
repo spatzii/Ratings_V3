@@ -3,7 +3,7 @@ from fastapi import APIRouter, UploadFile, File, Depends
 from fastapi.responses import JSONResponse
 from utils.reqest_management import RequestParams
 from services.database_service import DatabaseService, RatingsTable
-from services.ratings_service import RatingsService
+from services.ratings_file_service import RatingsFileService
 from postgrest.exceptions import APIError
 import pandas as pd
 

@@ -46,6 +46,7 @@
 
   ],
 
+
   "weekday_time_blocks": [
     {
       "show_name": "Digimatinal",
@@ -450,7 +451,7 @@
     },
     {
       "show_name": "Reluari",
-      "start_time": "1",
+      "start_time": "01:00",
       "end_time": "06:00"
     }
   ]

@@ -1,14 +1,19 @@
 from datetime import datetime
 from typing import Final
-import pandas as pd
 from utils.logger import get_logger
+from utils.config import current_config
+
+import pandas as pd
+import json
 
 
 logger = get_logger(__name__)
 INDEX_COLUMN: Final = 'Timebands'
-CHANNELS: Final = [0, 19, 21, 22, 23, 24, 25, 27, 33, 34, 35, 36]
+CHANNELS: Final = ['TTV', 'B1TV', 'Romania TV', 'Digi 24', 'Realitatea Plus', 'Antena 3 CNN',
+                   'EuroNews', 'TVR 1', 'Antena 1', 'Pro TV', 'DigiSport 1']
+SCHEMA_PATH = current_config.SCHEMA
 
-class RatingsService:
+class RatingsFileService:
     """Service for processing, uploading, and retrieving TV ratings data from Excel files.
 
     This service handles the complete lifecycle of ratings data, from initial Excel processing
@@ -25,7 +30,7 @@ class RatingsService:
         self.filename = filename
         self.contents = contents
 
-    async def process_ratings(self) -> dict:
+    async def process_ratings_file(self) -> dict:
         """Process the Excel ratings file into a standardized format.
 
         Reads the Excel file from the third sheet (index 2), starting from the third row (header=2),
@@ -39,20 +44,16 @@ class RatingsService:
         """
         xlsx_ratings_sheet = pd.read_excel(self.contents,  # type: ignore
                                            sheet_name=2, # Periods(U21-59 + g)
-                                           header=2,
-                                           index_col=0,
-                                           usecols=CHANNELS)
+                                           header=[1,2],
+                                           index_col=0)['Rtg%'][CHANNELS]
 
-        if not RatingsService.is_excel_valid(xlsx_ratings_sheet):
-            raise ValueError("Invalid Excel format")
-
-        return RatingsService.clean_ratings_data(xlsx_ratings_sheet, self.date)
+        return RatingsFileService.clean_data(xlsx_ratings_sheet, self.date)
 
     @staticmethod
-    def clean_ratings_data(dataframe: pd.DataFrame, date: str) -> dict:
-        dataframe.columns = [col.replace('.1', '') for col in dataframe.columns]
+    def clean_data(dataframe: pd.DataFrame, date: str) -> dict:
+        # dataframe.columns = [col.replace('.1', '') for col in dataframe.columns]
         dataframe.index = pd.to_datetime([
-            RatingsService.fix_broadcast_time(idx, date) for idx in dataframe.index
+            RatingsFileService.fix_broadcast_time(idx, date) for idx in dataframe.index
         ])
         dataframe = dataframe[~dataframe.index.isna()]
 
@@ -73,6 +74,24 @@ class RatingsService:
         }
         return json_data
 
+
+    @staticmethod
+    def pivot_datatable(json_data: dict) -> list[dict]:
+        with open(SCHEMA_PATH, 'r', encoding='utf-8-sig') as f:  # utf-8-sig handles the BOM
+            mappings = json.load(f)
+
+        df_melted = pd.melt(pd.DataFrame(json_data.get('data')), id_vars=['Timebands'], var_name='channel_id', value_name='rating')
+        # Create a mapping dictionary from the schema
+        channel_mapping = {channel['name']: str(channel['id']) for channel in mappings['channels']}
+        # Replace the values in df_melted['variable'] using the mapping
+        df_melted['channel_id'] = df_melted['channel_id'].replace(channel_mapping)
+
+        return df_melted.to_dict('records')
+
+
+
+
+
     @staticmethod
     def fix_broadcast_time(timestring: str, date_of_file: str) -> str | None:
         """Convert time strings like '24:00' to next day datetime."""
@@ -85,15 +104,6 @@ class RatingsService:
             return f'{date_of_file} {hour:02d}:{minute:02d}'
         except:
             return None
-
-    @staticmethod
-    def is_excel_valid(ratings_df: pd.DataFrame) -> bool:
-        if ratings_df.columns[3] != "Digi 24.1":
-            logger.info("XLSX Validation Error!")
-            return False
-        else:
-            return True
-
 
     ### TODO: These two need to be joined
     def extract_date(self) -> tuple[str, str, str]:

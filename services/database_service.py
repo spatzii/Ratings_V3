@@ -1,4 +1,4 @@
-from sql.supabase_init import supabase as db
+from sql.supabase_init import supabase
 from utils.logger import get_logger
 from postgrest import APIResponse
 from typing import List, Dict
@@ -7,19 +7,24 @@ from datetime import datetime
 
 logger = get_logger(__name__)
 
-RATINGS_TABLE = db.table('tv_ratings')
+RATINGS_TABLE = supabase.table('ratings')
 INDEX = 'Timebands'
 RESAMPLE_INTERVAL = '15min'
 DECIMAL_PRECISION = 2
 
 class DatabaseService:
 
-    def __init__(self, daily_ratings:dict):
-        self.daily_ratings = daily_ratings.get('data')
+    def __init__(self, daily_ratings:list[dict]):
+        self.daily_ratings = daily_ratings
 
     def insert_tv_ratings(self):
         RATINGS_TABLE.insert(self.daily_ratings).execute()
         logger.info("Insert successful!")
+        supabase.rpc('update_show_names_for_date', {'target_date': '2025-06-30'}).execute()
+
+    @staticmethod
+    def channel_id_conversion(channels:list[str]):
+        ...
 
 
 class RatingsTable:
@@ -52,14 +57,15 @@ class RatingsTable:
         """
 
         start_time = pd.to_datetime(date + " " + timeframe[0])
+        start_time = start_time.strftime('%Y-%m-%d %H:%M:%S')
         end_time = pd.to_datetime(date + " " + timeframe[1])
+        end_time = end_time.strftime('%Y-%m-%d %H:%M:%S')
 
-
-        prepared_channels = cls._prepare_channels(channels)
-        sql_channels = cls._format_channels_for_query(prepared_channels)
+        # prepared_channels = cls._prepare_channels(channels)
+        # sql_channels = cls._format_channels_for_query(prepared_channels)
 
         try:
-            data = cls._fetch_ratings(start_time, end_time, sql_channels)
+            data = cls._fetch_ratings(start_time, end_time, channels)
             df = cls._create_dataframe(data)
             return cls(df)
         except Exception as e:
@@ -72,13 +78,13 @@ class RatingsTable:
         channels_without_timebands = [c for c in channels if c != "Timebands"]
         return ["Timebands"] + channels_without_timebands
 
-    @staticmethod
+    @staticmethod # TODO: Verifiy if it's still necessary
     def _format_channels_for_query(channels: List[str]) -> str:
         """Format channel names for SQL query."""
         return ', '.join(f'"{channel}"' for channel in channels)
 
     @classmethod
-    def _fetch_ratings(cls, start_time: datetime, end_time: datetime, sql_channels: str) -> List[Dict]:
+    def _fetch_ratings(cls, start_time: str, end_time: str, sql_channels: List[str]) -> List[Dict]:
         """Fetch ratings data from database.
 
         Args:
@@ -90,11 +96,21 @@ class RatingsTable:
             List of rating records
         """
         try:
-            response: APIResponse = (RATINGS_TABLE
-                                     .select(sql_channels)
-                                     .gte(INDEX, str(start_time))
-                                     .lt(INDEX, str(end_time))
-                                     .execute())
+            # response: APIResponse = (supabase.from_('ratings')
+            #                          .select("rating, Timebands, channels!inner(name)")
+            #                          .in_('channels.name', sql_channels)
+            #                          .gte(INDEX, start_time)
+            #                          .lt(INDEX, end_time)
+            #                          .execute()
+            #                          )
+
+            response: APIResponse = supabase.rpc(
+                'get_ratings_with_channel_names',
+                {
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'channel_names': sql_channels
+                }).execute()
             return response.data
         except Exception as e:
             logger.error(f"Database query failed: {str(e)}")
@@ -113,7 +129,9 @@ class RatingsTable:
         df = pd.DataFrame(data)
         df.set_index(INDEX, inplace=True)
         df.index = pd.to_datetime(df.index)
-        return df
+        pivoted_df = df.pivot(columns='channel_name', values='rating')
+        pivoted_df.columns.name = None
+        return pivoted_df
 
     def basetable(self) -> pd.DataFrame:
         """Calculate and return interval and overall averages.

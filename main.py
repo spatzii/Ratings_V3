@@ -43,7 +43,6 @@ print(f"ENV variable: {os.getenv('ENV')}")
 print(f"Config class: {current_config.__class__.__name__}")
 print(f"Storage type: {current_config.STORAGE_TYPE}")
 print(f"Project root: {current_config.PROJECT_ROOT}")
-print(f"Project config: {current_config.TEST_NAME}")
 
 if __name__ == "__main__":
     import uvicorn
