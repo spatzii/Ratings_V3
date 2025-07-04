@@ -58,8 +58,8 @@ Example:
 
     @property
     def time_range(self) -> list[str]:
-        self.start_hour = datetime.strptime(self.start_hour, format('%H')).strftime('%H:%M')
-        self.end_hour = datetime.strptime(self.end_hour, format('%H')).strftime('%H:%M')
+        self.start_hour = datetime.strptime(self.start_hour, '%H').strftime('%H:%M')
+        self.end_hour = datetime.strptime(self.end_hour, '%H').strftime('%H:%M')
 
         return [self.start_hour, self.end_hour]
 

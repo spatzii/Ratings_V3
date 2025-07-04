@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+[0.4.4] - 2025-07-04 
+- 
+- Migrated SQL tables from tv_ratings to ratings
+- Channel storage is done by channel_id
+- Filtering channels is done with SQL function (get_ratings_with_channel_names` RPC)
+- Fix various transitional bugs
+
 [0.4.3] - 2025-06-22 
 - Migrated to SQL database
 - Added endpoints module archictecture for FastAPI
