@@ -1,3 +1,4 @@
+import io
 from datetime import datetime
 from typing import Final
 from utils.logger import get_logger
@@ -42,7 +43,9 @@ class RatingsFileService:
         Raises:
             ValueError: If the Excel file format is invalid
         """
-        xlsx_ratings_sheet = pd.read_excel(self.contents,  # type: ignore
+        excel_buffer = io.BytesIO(self.contents)
+
+        xlsx_ratings_sheet = pd.read_excel(excel_buffer,  # type: ignore
                                            sheet_name=2, # Periods(U21-59 + g)
                                            header=[1,2],
                                            index_col=0)['Rtg%'][CHANNELS]

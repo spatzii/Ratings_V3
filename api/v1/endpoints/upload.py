@@ -6,7 +6,6 @@ from . import (
     RatingsFileService,
     DatabaseService,
     RatingsTable,
-    APIError
 )
 from core.config import Settings
 
@@ -25,15 +24,17 @@ async def upload_xlsx(xlsx_file: UploadFile = File(...)):
         melted_file: list[dict] = ratings_service.pivot_datatable(processed_file)
         database_service = DatabaseService(melted_file)
 
-        try:
-            database_service.insert_tv_ratings()
-        except APIError as e:
-            if 'ratings_Timebands_key' in str(e):
-                return JSONResponse(
-                    status_code=409,
-                    content={"message": "File already uploaded"}
-                )
-            raise
+        database_service.insert_tv_ratings()
+        ### TODO: Refactor this, but with SQLite instead of Postgres/APIError
+        # try:
+        #     database_service.insert_tv_ratings()
+        # except APIError as e:
+        #     if 'ratings_Timebands_key' in str(e):
+        #         return JSONResponse(
+        #             status_code=409,
+        #             content={"message": "File already uploaded"}
+        #         )
+        #     raise
 
         query = (RatingsTable.from_timeframe(date=ratings_service.date,
                                              timeframe=Settings.TIME_RANGE,

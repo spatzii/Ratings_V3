@@ -1,13 +1,11 @@
-from sql.supabase_init import supabase
 from utils.logger import get_logger
-from postgrest import APIResponse
 from typing import List, Dict
 import pandas as pd
 from datetime import datetime
 
 logger = get_logger(__name__)
 
-RATINGS_TABLE = supabase.table('ratings')
+# RATINGS_TABLE = supabase.table('ratings')
 INDEX = 'Timebands'
 RESAMPLE_INTERVAL = '15min'
 DECIMAL_PRECISION = 2

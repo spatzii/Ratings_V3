@@ -1,15 +1,22 @@
-﻿from fastapi.middleware.cors import CORSMiddleware
+﻿
+import asyncio
+import os
+from services.ratings_file_service import RatingsFileService
+
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
-
+from pathlib import Path
 from api.v1.router import api_router
 
 from utils.config import current_config
-import os
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup code
+    if os.getenv("RUN_TEST_ON_STARTUP") == "1":
+        await test()
     yield
     # Shutdown code (if any)
 
@@ -41,10 +48,18 @@ app.include_router(api_router, prefix="/api/v1")
 print("Debug Information:")
 print(f"ENV variable: {os.getenv('ENV')}")
 print(f"Config class: {current_config.__class__.__name__}")
-print(f"Storage type: {current_config.STORAGE_TYPE}")
 print(f"Project root: {current_config.PROJECT_ROOT}")
+
+async def test():
+    test_file = Path("/Users/stefanpana/PycharmProjects/Ratings-v2_backend/Data/Ratings/Digi 24-audiente zilnice la minut 2026-01-26.xlsx")
+    with open(test_file, "rb") as f:
+        service = RatingsFileService(f.read(), test_file.name)
+        cleaned = await service.process_ratings_file()
+        print(cleaned["data"][:5])
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+
+
