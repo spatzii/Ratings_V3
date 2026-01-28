@@ -51,7 +51,7 @@ print(f"Config class: {current_config.__class__.__name__}")
 print(f"Project root: {current_config.PROJECT_ROOT}")
 
 async def test():
-    test_file = Path("/Users/stefanpana/PycharmProjects/Ratings-v2_backend/Data/Ratings/Digi 24-audiente zilnice la minut 2026-01-26.xlsx")
+    test_file = Path("//Data/Ratings/Digi 24-audiente zilnice la minut 2026-01-26.xlsx")
     with open(test_file, "rb") as f:
         service = RatingsFileService(f.read(), test_file.name)
         cleaned = await service.process_ratings_file()

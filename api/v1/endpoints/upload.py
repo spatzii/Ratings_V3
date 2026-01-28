@@ -25,7 +25,7 @@ async def upload_xlsx(xlsx_file: UploadFile = File(...)):
         database_service = DatabaseService(melted_file)
 
         database_service.insert_tv_ratings()
-        ### TODO: Refactor this, but with SQLite instead of Postgres/APIError
+        ### Refactor this, but with SQLite instead of Postgres/APIError
         # try:
         #     database_service.insert_tv_ratings()
         # except APIError as e:
