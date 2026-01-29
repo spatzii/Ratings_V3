@@ -1,0 +1,10 @@
+{
+  "test_credentials": {
+    "link": "https://s.go.ro/90cwculu",
+    "password": "852621",
+    "uuid": "b34f8d7a-4559-45f8-9718-797c0e32c785",
+    "expected_filename": "Digi 24-audiente zilnice 2026-01-28.xlsx",
+    "notes": "Update daily with new link from email"
+  },
+  "last_updated": "2026-01-29"
+  }

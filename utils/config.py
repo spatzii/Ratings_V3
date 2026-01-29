@@ -7,20 +7,30 @@ class Config:
     pass
 
 class DevelopmentConfig(Config):
-
+    NAME = "Dev"
     PROJECT_ROOT = Path(__file__).parent.parent
     # Create a platform-independent path for storage
     # STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
 
     SCHEMA = 'C:/Users/panas/PycharmProjects/ratings_backend/core/mappings.json'
 
+    @staticmethod
+    def get_credentials_service():
+        from services.mock_credentials import MockCredentialsService
+        return MockCredentialsService()
+
 
 
 class ProductionConfig(Config):
-
+    NAME = "Prod"
     PROJECT_ROOT = Path(__file__).parent.parent
 
     SCHEMA = os.getenv('mappings.json')
+
+    @staticmethod
+    def get_credentials_service():
+        from services.email_service import EmailService
+        return EmailService()
 
 # You can set this based on an environment variable
 config = {

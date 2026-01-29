@@ -27,6 +27,11 @@ DATE_OF_DATA = (datetime.datetime.today() - timedelta(days=1)).strftime("%d.%m")
                                                                                   # No year to account for wrong dates
 
 
+class ExtractionError(Exception):
+    """Raised when password or link extraction fails."""
+    pass
+
+
 class EmailService:
     """Service for connecting to Gmail and retrieving ratings emails."""
 
@@ -55,69 +60,48 @@ class EmailService:
             except:
                 pass
 
+    @staticmethod
+    def _decode_payload(part: Message) -> str | None:
+        """Decode payload from an email part, handling charset issues."""
+        payload = part.get_payload(decode=True)
+        if not payload:
+            return None
+        charset = part.get_content_charset() or "utf-8"
+        try:
+            return payload.decode(charset, errors="replace")
+        except LookupError:
+            return payload.decode("utf-8", errors="replace")
+
     def _extract_text_body(self, msg: Message) -> str:
         """Best-effort extraction of a readable text body from an email message."""
-        text_chunks: list[str] = []
 
-        if msg.is_multipart():
-            for part in msg.walk():
+        def extract_parts(target_type: str) -> list[str]:
+            """Extract text chunks of a given content type from the message."""
+            chunks: list[str] = []
+            parts = msg.walk() if msg.is_multipart() else [msg]
+
+            for part in parts:
                 content_type = (part.get_content_type() or "").lower()
                 content_disposition = (part.get("Content-Disposition") or "").lower()
 
-                # Skip attachments
                 if "attachment" in content_disposition:
                     continue
 
-                if content_type == "text/plain":
-                    payload = part.get_payload(decode=True)
-                    if payload:
-                        charset = part.get_content_charset() or "utf-8"
-                        try:
-                            text_chunks.append(payload.decode(charset, errors="replace"))
-                        except LookupError:
-                            text_chunks.append(payload.decode("utf-8", errors="replace"))
-        else:
-            if (msg.get_content_type() or "").lower() == "text/plain":
-                payload = msg.get_payload(decode=True)
-                if payload:
-                    charset = msg.get_content_charset() or "utf-8"
-                    try:
-                        text_chunks.append(payload.decode(charset, errors="replace"))
-                    except LookupError:
-                        text_chunks.append(payload.decode("utf-8", errors="replace"))
+                if content_type == target_type:
+                    decoded = self._decode_payload(part)
+                    if decoded:
+                        chunks.append(decoded)
 
+            return chunks
+
+        text_chunks = extract_parts("text/plain")
         body_text = "\n".join(chunk.strip() for chunk in text_chunks if chunk and chunk.strip())
 
         # If there's no text/plain part, fall back to a very rough HTML->text strip.
         if not body_text:
-            html_chunks: list[str] = []
-            if msg.is_multipart():
-                for part in msg.walk():
-                    content_type = (part.get_content_type() or "").lower()
-                    content_disposition = (part.get("Content-Disposition") or "").lower()
-                    if "attachment" in content_disposition:
-                        continue
-                    if content_type == "text/html":
-                        payload = part.get_payload(decode=True)
-                        if payload:
-                            charset = part.get_content_charset() or "utf-8"
-                            try:
-                                html_chunks.append(payload.decode(charset, errors="replace"))
-                            except LookupError:
-                                html_chunks.append(payload.decode("utf-8", errors="replace"))
-            else:
-                if (msg.get_content_type() or "").lower() == "text/html":
-                    payload = msg.get_payload(decode=True)
-                    if payload:
-                        charset = msg.get_content_charset() or "utf-8"
-                        try:
-                            html_chunks.append(payload.decode(charset, errors="replace"))
-                        except LookupError:
-                            html_chunks.append(payload.decode("utf-8", errors="replace"))
-
+            html_chunks = extract_parts("text/html")
             html = "\n".join(html_chunks)
             if html:
-                # crude but dependency-free: remove tags
                 body_text = re.sub(r"<[^>]+>", " ", html)
                 body_text = re.sub(r"\s+", " ", body_text).strip()
 
@@ -164,7 +148,8 @@ class EmailService:
         except Exception as e:
             logger.error(f"Failed to fetch email details: {str(e)}")
             return {}
-    def _extract_password_from_body(self, body_text: str) -> str | None:
+    @staticmethod
+    def _extract_password_from_body(body_text: str) -> str | None:
         """
         Extracts a password value from body text like: 'password: 322792'
         Returns the first match or None.
@@ -179,7 +164,8 @@ class EmailService:
         # Slightly more permissive fallback (in case it's not on its own line)
         match = re.search(r"(?i)\bpassword\s*:\s*([0-9]+)\b", body_text)
         return match.group(1) if match else None
-    def _extract_https_link_from_body(self, body_text: str) -> str | None:
+    @staticmethod
+    def _extract_https_link_from_body(body_text: str) -> str | None:
         """Extract the first https:// link from body text (if present)."""
         if not body_text:
             return None
@@ -201,6 +187,32 @@ class EmailService:
         details = self.get_email_details(email_id)
         body_text = (details.get("body") or "")
         return self._extract_https_link_from_body(body_text)
+
+    def get_credentials(self, email_id: bytes) -> tuple[str, str]:
+        """Fetch an email and extract both password and link.
+
+        Args:
+            email_id: Email ID from search results
+
+        Returns:
+            tuple[str, str]: (password, link)
+
+        Raises:
+            ExtractionError: If password or link cannot be extracted
+        """
+        details = self.get_email_details(email_id)
+        body_text = details.get("body") or ""
+
+        password = self._extract_password_from_body(body_text)
+        if not password:
+            raise ExtractionError("Failed to extract password from email")
+
+        link = self._extract_https_link_from_body(body_text)
+        if not link:
+            raise ExtractionError("Failed to extract link from email")
+
+        return password, link
+
     def search_emails(self, search_string: str) -> list[bytes]:
         """Search for emails by date + subject and return their IMAP IDs (bytes)."""
         if not self.connection:
@@ -236,40 +248,47 @@ class EmailService:
             logger.error(f"Search failed: {str(e)}")
             return []
 
+    def fetch_ratings_credentials(self) -> tuple[str, str] | None:
+        """Main entry point: connect, search for ratings email, extract credentials.
+
+        Returns:
+            tuple[str, str] | None: (password, link) if email found, None if not found
+
+        Raises:
+            ExtractionError: If email is found but password or link extraction fails
+        """
+        if not self.connect():
+            logger.error("Failed to connect to Gmail")
+            return None
+
+        try:
+            email_ids = self.search_emails(DATE_OF_DATA)
+
+            if not email_ids:
+                logger.info("Ratings email hasn't arrived yet")
+                return None
+
+            # There should only be one matching email
+            email_id = email_ids[0]
+            password, link = self.get_credentials(email_id)
+
+            logger.info(f"Password: {password}")
+            logger.info(f"Link: {link}")
+
+            return password, link
+
+        finally:
+            self.disconnect()
+
 
 def main():
-    """Search for emails containing 'Audiente'."""
-
+    """Fetch ratings email credentials."""
     email_service = EmailService()
+    credentials = email_service.fetch_ratings_credentials()
 
-    if not email_service.connect():
-        logger.error("Failed to connect")
-        return
-
-    # Search for emails with "Audiente"
-    email_ids = email_service.search_emails(DATE_OF_DATA)
-
-    if email_ids:
-        logger.info(f"\nFound {len(email_ids)} matching email(s):")
-        logger.info("-" * 50)
-
-        # Get details for each email
-        for email_id in email_ids:
-            details = email_service.get_email_details(email_id)
-            if details:
-                logger.info(f"Subject: {details['subject']}")
-                logger.info(f"From: {details['from']}")
-                logger.info(f"Date: {details['date']}")
-
-                link = email_service.get_email_link(email_id)
-                logger.info(f"Link: {link if link else '(not found)'}")
-
-                pwd = email_service.get_email_password(email_id)
-                logger.info(f"Password: {pwd if pwd else '(not found)'}")
-
-                logger.info("-" * 50)
-
-    email_service.disconnect()
+    if credentials:
+        password, link = credentials
+        logger.info(f"Successfully retrieved credentials - Password: {password}, Link: {link}")
 
 
 if __name__ == "__main__":
