@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote  # <-- add this
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -61,10 +62,11 @@ class RatingsDownloader:
             logger.info(f"Target file: {filename}")
 
             # 3. Build download URL with password parameter
+            encoded_filename = quote(filename, safe="")  # encode everything unsafe for a URL component
             download_url = (
                 f"https://storage.rcs-rds.ro/content/links/{uuid}/files/get/"
-                f"{requests.utils.quote(filename)}"
-                f"?path=%2F{requests.utils.quote(filename)}&password={password}"
+                f"{encoded_filename}"
+                f"?path=%2F{encoded_filename}&password={password}"
             )
 
             # 4. Set headers to mimic browser (CRITICAL for success!)
