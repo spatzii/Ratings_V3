@@ -57,7 +57,7 @@ class RatingsDownloader:
             logger.info(f"✓ Extracted UUID: {uuid}")
 
             # 2. Construct filename
-            filename = f"Digi 24-audiente zilnice {DOWNLOAD_DATE}.xlsx"
+            filename = f"Digi 24-audiente zilnice la minut {DOWNLOAD_DATE}.xlsx"
             logger.info(f"Target file: {filename}")
 
             # 3. Build download URL with password parameter
