@@ -124,13 +124,15 @@ class RatingsTable:
         Returns:
             Processed DataFrame
         """
+
         df = pd.DataFrame(data)
         df.set_index(INDEX, inplace=True)
         df.index = pd.to_datetime(df.index)
+
         pivoted_df = df.pivot(columns='channel_name', values='rating')
         pivoted_df.columns.name = None
-        return pivoted_df
 
+        return pivoted_df
     def basetable(self) -> pd.DataFrame:
         """Calculate and return interval and overall averages.
 
@@ -153,7 +155,6 @@ class RatingsTable:
         Returns:
             Raw ratings DataFrame
         """
-        # return self._dataframe.copy()
         return self._dataframe.resample(RESAMPLE_INTERVAL).mean().round(DECIMAL_PRECISION)
 
     @staticmethod

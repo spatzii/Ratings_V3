@@ -15,12 +15,19 @@ CHANNELS: Final = ['TTV', 'B1TV', 'Romania TV', 'Digi 24', 'Realitatea Plus', 'A
 SCHEMA_PATH = current_config.SCHEMA
 
 class RatingsFileService:
-    """Service for processing, uploading, and retrieving TV ratings data from Excel files.
+    """Parse an uploaded ratings Excel file and return a database-ready “melted” table.
 
-    This service handles the complete lifecycle of ratings data, from initial Excel processing
-    to storage management and retrieval of processed data.
+    Designed usage:
+        1) Initialize with the raw file bytes and original filename (date is derived from the filename).
+        2) `await process_ratings_file()` to read the ratings sheet and normalize it into a JSON-like
+           structure (`{"schema": ..., "data": ...}`) with a `Timebands` timestamp column.
+        3) `pivot_datatable(processed)` to melt the wide channel columns into rows and map channel
+           names to channel IDs from the configured schema, producing the final list of records:
+           `[{ "Timebands": "...", "channel_id": "...", "rating": ... }, ...]`.
+
+    The melted output from `pivot_datatable()` is the primary artifact intended for downstream storage.
     """
-
+# ... existing code ...
     def __init__(self, contents: bytes, filename: str):
         """Initialize the RatingsService with Excel file contents and filename.
 

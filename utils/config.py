@@ -12,7 +12,7 @@ class DevelopmentConfig(Config):
     # Create a platform-independent path for storage
     # STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
 
-    SCHEMA = 'C:/Users/panas/PycharmProjects/ratings_backend/core/mappings.json'
+    SCHEMA = '/Users/stefanpana/PycharmProjects/RatingsBackend/core/mappings.json'
 
     @staticmethod
     def get_credentials_service():
