@@ -1,38 +1,38 @@
 import requests
+
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 from urllib.parse import quote  # <-- add this
 from utils.logger import get_logger
+from utils.config import current_config
 
 logger = get_logger(__name__)
 
 # ============ CONFIG ============
-DOWNLOAD_DIR = Path("/Users/stefanpana/PycharmProjects/RatingsBackend")
-BACKEND_URL = "http://localhost:8000/api/v1/upload/xlsx"  # Updated to match your FastAPI endpoint
+DOWNLOAD_DIR = current_config.DOWNLOAD_DIR
 DOWNLOAD_DATE = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")  # e.g. 2026-01-28
 
 
 class RatingsDownloader:
     """Downloads TV ratings files from Digi Storage using credentials from EmailService."""
 
-    def __init__(self, download_dir: Path = DOWNLOAD_DIR, backend_url: str = BACKEND_URL):
+    def __init__(self, download_dir: Path = DOWNLOAD_DIR):
         """Initialize the downloader with target directories.
 
         Args:
             download_dir: Path where xlsx files will be saved
-            backend_url: Backend API endpoint for uploading files
         """
         self.download_dir = download_dir
-        self.backend_url = backend_url
         self.download_dir.mkdir(parents=True, exist_ok=True)
 
-    def download(self, password: str, short_url: str) -> Optional[Path]:
+    def download(self, password: str, short_url: str, download_date: Optional[str] = None) -> Optional[Path]:
         """Download ratings file from Digi Storage.
 
         Args:
             password: Password extracted from email
             short_url: Short URL (https://s.go.ro/xxxxx) from email
+            download_date: Optional date string (YYYY-MM-DD). If provided, overrides the default DOWNLOAD_DATE.
 
         Returns:
             Path to downloaded file if successful, None otherwise
@@ -58,7 +58,8 @@ class RatingsDownloader:
             logger.info(f"✓ Extracted UUID: {uuid}")
 
             # 2. Construct filename
-            filename = f"Digi 24-audiente zilnice la minut {DOWNLOAD_DATE}.xlsx"
+            effective_date = download_date or DOWNLOAD_DATE
+            filename = f"Digi 24-audiente zilnice la minut {effective_date}.xlsx"
             logger.info(f"Target file: {filename}")
 
             # 3. Build download URL with password parameter
@@ -141,51 +142,3 @@ class RatingsDownloader:
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
             return False
-
-
-def main():
-    """Main entry point: fetch credentials and download ratings file.
-
-    For testing, you can use MockCredentialsService instead of EmailService.
-    """
-    logger.info("Starting ratings download automation...")
-
-    # For production, use EmailService
-    # from services.email_service import EmailService
-    # credentials_service = EmailService()
-
-    # For testing, use MockCredentialsService
-    from services.mock_credentials import MockCredentialsService
-    credentials_service = MockCredentialsService()
-
-    credentials = credentials_service.fetch_ratings_credentials()
-
-    if not credentials:
-        logger.error("Failed to retrieve credentials")
-        return False
-
-    password, short_url = credentials
-    logger.info(f"✓ Got credentials")
-    logger.info(f"  Password: {password}")
-    logger.info(f"  Link: {short_url}")
-
-    # Download the file
-    downloader = RatingsDownloader()
-    filepath = downloader.download(password, short_url)
-
-    if not filepath:
-        logger.error("Failed to download file")
-        return False
-
-    # Upload to backend
-    if not downloader.upload_to_backend(filepath):
-        logger.error("Failed to upload file to backend")
-        return False
-
-    logger.info("✓ Download and upload complete!")
-    return True
-
-
-if __name__ == "__main__":
-    success = main()
-    exit(0 if success else 1)

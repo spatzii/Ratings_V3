@@ -9,8 +9,7 @@ class Config:
 class DevelopmentConfig(Config):
     NAME = "Dev"
     PROJECT_ROOT = Path(__file__).parent.parent
-    # Create a platform-independent path for storage
-    # STORAGE_PATH = str(PROJECT_ROOT / 'ratings_data')
+    DOWNLOAD_DIR = Path("/Users/stefanpana/PycharmProjects/RatingsBackend")
 
     SCHEMA = '/Users/stefanpana/PycharmProjects/RatingsBackend/core/mappings.json'
 
@@ -24,8 +23,21 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     NAME = "Prod"
     PROJECT_ROOT = Path(__file__).parent.parent
+    DOWNLOAD_DIR = Path(os.getenv('DOWNLOAD_DIR', "/Users/stefanpana/PycharmProjects/RatingsBackend"))
 
-    SCHEMA = os.getenv('mappings.json')
+    SSCHEMA = '/Users/stefanpana/PycharmProjects/RatingsBackend/core/mappings.json'
+
+    @staticmethod
+    def get_credentials_service():
+        from services.email_service import EmailService
+        return EmailService()
+
+
+class RaspberryConfig(Config):
+    NAME = "Raspberry"
+    PROJECT_ROOT = Path(__file__).parent.parent
+    DOWNLOAD_DIR = Path('/home/pi/ratings/downloads')
+    SCHEMA = '/home/pi/ratings/core/mappings.json'
 
     @staticmethod
     def get_credentials_service():
@@ -36,6 +48,7 @@ class ProductionConfig(Config):
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'raspberry': RaspberryConfig,
     'default': DevelopmentConfig,
 }
 

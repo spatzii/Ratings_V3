@@ -1,7 +1,11 @@
 ﻿
-import asyncio
 import os
+
+from pandas.core.computation.common import result_type_many
+
 from services.ratings_file_service import RatingsFileService
+from services.download_service import RatingsDownloader
+from services.DailyRatingsReport import DailyRatingsReport
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
@@ -61,5 +65,16 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+
+
+    checkEmailService = current_config.get_credentials_service()
+
+    linkAndPass = checkEmailService.fetch_ratings_credentials()
+    password, link = linkAndPass
+
+    fileDownloader = RatingsDownloader()
+    download = fileDownloader.download(password, link)
+
+    reportGenerator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name))
 
 
