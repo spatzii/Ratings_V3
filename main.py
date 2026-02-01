@@ -1,8 +1,6 @@
 ﻿
 import os
-import sys
-
-from pandas.core.computation.common import result_type_many
+import asyncio
 
 from services.ratings_file_service import RatingsFileService
 from services.download_service import RatingsDownloader
@@ -64,31 +62,31 @@ async def test():
         cleaned = await service.process_ratings_file()
         print(cleaned["data"][:5])
 
-if __name__ == "__main__":
-    # import uvicorn
-    # port = int(os.getenv("PORT", 8000))
-    # uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
-
-
-    checkEmailService = current_config.get_credentials_service()
+async def main():
+    email_service = current_config.get_credentials_service()
 
     try:
+        link_and_pass = email_service.fetch_ratings_credentials()
+        if link_and_pass is None:
+            return
 
-        linkAndPass = checkEmailService.fetch_ratings_credentials()
-        if linkAndPass is None:
-            sys.exit(0)
-        password, link = linkAndPass
+        password, link = link_and_pass
 
-        fileDownloader = RatingsDownloader()
-        download = fileDownloader.download(password, link)
+        file_downloader = RatingsDownloader()
+        download = file_downloader.download(password, link)
 
-        reportGenerator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name))
+        report_generator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name))
+        report = await report_generator.generate_report()
+
+        # For email body
+        html_report = report_generator.to_html(report)
+
+        email_service.send_report(html_report, "pana.stefan@gmail.com")
 
     except ExtractionError as e:
-        # Email was found, but password/link couldn't be extracted (real error condition)
         print(f"Found email but couldn't extract credentials: {e}")
         raise
 
 
-
-
+if __name__ == "__main__":
+    asyncio.run(main())

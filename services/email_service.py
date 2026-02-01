@@ -3,9 +3,12 @@ import email
 import os
 import datetime
 import re
+import smtplib
 
 from email.header import decode_header
 from email.message import Message
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -19,6 +22,8 @@ load_dotenv()
 # ============ CONFIG ============
 IMAP_SERVER = "imap.gmail.com"
 IMAP_PORT = 993
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
 EMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
 EMAIL_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 
@@ -301,6 +306,35 @@ class EmailService:
 
         finally:
             self.disconnect()
+
+    def send_report(self, report_html: str, recipient: str) -> None:
+        """Send an HTML report via email.
+
+        Args:
+            report_html: The HTML content of the report
+            recipient: The email address to send the report to
+        """
+        yesterday = datetime.datetime.today() - timedelta(days=1)
+        subject = f"Audiente {yesterday.strftime('%d.%m.%Y')}"
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_ADDRESS
+        msg["To"] = recipient
+
+        html_part = MIMEText(report_html, "html")
+        msg.attach(html_part)
+
+        try:
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.starttls()
+                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                server.sendmail(EMAIL_ADDRESS, recipient, msg.as_string())
+
+            logger.info(f"Report sent to {recipient} with subject: {subject}")
+
+        except Exception as e:
+            logger.error(f"Failed to send report to {recipient}: {str(e)}")
 
 
 def main():
