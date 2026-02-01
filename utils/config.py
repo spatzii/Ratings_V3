@@ -14,7 +14,7 @@ class DevelopmentConfig(Config):
     SCHEMA = '/Users/stefanpana/PycharmProjects/RatingsBackend/core/mappings.json'
 
     @staticmethod
-    def get_credentials_service():
+    def get_credentials_service(use_yesterday:bool = False):
         from services.mock_credentials import MockCredentialsService
         return MockCredentialsService()
 
@@ -25,12 +25,12 @@ class ProductionConfig(Config):
     PROJECT_ROOT = Path(__file__).parent.parent
     DOWNLOAD_DIR = Path(os.getenv('DOWNLOAD_DIR', "/Users/stefanpana/PycharmProjects/RatingsBackend"))
 
-    SSCHEMA = '/Users/stefanpana/PycharmProjects/RatingsBackend/core/mappings.json'
+    SCHEMA = '/Users/stefanpana/PycharmProjects/RatingsBackend/core/mappings.json'
 
     @staticmethod
-    def get_credentials_service():
+    def get_credentials_service(use_yesterday: bool = False):
         from services.email_service import EmailService
-        return EmailService()
+        return EmailService(use_yesterday=use_yesterday)
 
 
 class RaspberryConfig(Config):
@@ -40,9 +40,9 @@ class RaspberryConfig(Config):
     SCHEMA = '/home/pi/ratings/core/mappings.json'
 
     @staticmethod
-    def get_credentials_service():
+    def get_credentials_service(use_yesterday: bool = False):
         from services.email_service import EmailService
-        return EmailService()
+        return EmailService(use_yesterday=use_yesterday)
 
 # You can set this based on an environment variable
 config = {

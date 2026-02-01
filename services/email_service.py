@@ -22,10 +22,6 @@ IMAP_PORT = 993
 EMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
 EMAIL_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 
-DATE_TODAY = datetime.datetime.today().strftime("%d-%b-%Y")  # IMAP format, e.g. 28-Jan-2026
-DATE_OF_DATA = (datetime.datetime.today() - timedelta(days=1)).strftime("%d.%m")  # Digi email format eg. 01.01.
-                                                                                  # No year to account for wrong dates
-
 
 class ExtractionError(Exception):
     """Raised when password or link extraction fails."""
@@ -35,12 +31,27 @@ class ExtractionError(Exception):
 class EmailService:
     """Service for connecting to Gmail and retrieving ratings emails."""
 
-    def __init__(self):
+    def __init__(self, use_yesterday: bool = False):
+        """Initialize EmailService.
+
+        Args:
+            use_yesterday: If True, search for yesterday's email instead of today's.
+                          Use this when running early in the day before new email arrives.
+        """
         self.imap_server = IMAP_SERVER
         self.imap_port = IMAP_PORT
         self.email = EMAIL_ADDRESS
         self.password = EMAIL_PASSWORD
         self.connection = None
+        self.use_yesterday = use_yesterday
+
+        # Calculate search date based on use_yesterday flag
+        offset = 1 if use_yesterday else 0
+        search_date = datetime.datetime.today() - timedelta(days=offset)
+
+        self.search_date = search_date.strftime("%d-%b-%Y")  # IMAP format, e.g. 28-Jan-2026
+
+        logger.info(f"EmailService initialized - searching for emails from {self.search_date}")
 
     def connect(self) -> bool:
         """Establish connection to Gmail IMAP server."""
@@ -52,6 +63,7 @@ class EmailService:
         except Exception as e:
             logger.error(f"Connection failed: {str(e)}")
             return False
+
     def disconnect(self):
         """Close the IMAP connection."""
         if self.connection:
@@ -106,6 +118,7 @@ class EmailService:
                 body_text = re.sub(r"\s+", " ", body_text).strip()
 
         return body_text
+
     def get_email_details(self, email_id: bytes) -> dict:
         """Fetch basic details of an email.
 
@@ -148,6 +161,7 @@ class EmailService:
         except Exception as e:
             logger.error(f"Failed to fetch email details: {str(e)}")
             return {}
+
     @staticmethod
     def _extract_password_from_body(body_text: str) -> str | None:
         """
@@ -164,6 +178,7 @@ class EmailService:
         # Slightly more permissive fallback (in case it's not on its own line)
         match = re.search(r"(?i)\bpassword\s*:\s*([0-9]+)\b", body_text)
         return match.group(1) if match else None
+
     @staticmethod
     def _extract_https_link_from_body(body_text: str) -> str | None:
         """Extract the first https:// link from body text (if present)."""
@@ -177,11 +192,13 @@ class EmailService:
 
         url = match.group(0)
         return url.rstrip(".,;:!?)\"]'")
+
     def get_email_password(self, email_id: bytes) -> str | None:
         """Fetch an email and extract the password from its body (if present)."""
         details = self.get_email_details(email_id)
         body_text = (details.get("body") or "")
         return self._extract_password_from_body(body_text)
+
     def get_email_link(self, email_id: bytes) -> str | None:
         """Fetch an email and extract the first https link from its body (if present)."""
         details = self.get_email_details(email_id)
@@ -213,22 +230,18 @@ class EmailService:
 
         return password, link
 
-    def search_emails(self, search_string: str) -> list[bytes]:
-        """Search for emails by date + subject and return their IMAP IDs (bytes)."""
+    def search_emails(self) -> list[bytes]:
+        """Search for emails by date and return their IMAP IDs (bytes)."""
         if not self.connection:
             logger.error("Not connected. Call connect() first.")
             return []
 
         try:
-            # Select INBOX
             self.connection.select("INBOX")
 
-            # IMAP search (server-side)
-            safe_search = search_string.replace('"', '\\"')
             status, message_ids = self.connection.search(
                 None,
-                "ON", DATE_TODAY,
-                "SUBJECT", f'"{safe_search}"',
+                "ON", self.search_date,
             )
 
             if status != "OK":
@@ -238,9 +251,9 @@ class EmailService:
             email_ids = message_ids[0].split()
 
             if email_ids:
-                logger.info(f"✓ Found {len(email_ids)} email(s) containing '{search_string}'")
+                logger.info(f"Found {len(email_ids)} email(s) from {self.search_date}")
             else:
-                logger.info(f"No emails found containing '{search_string}'")
+                logger.info(f"No emails found from {self.search_date}")
 
             return email_ids
 
@@ -251,31 +264,40 @@ class EmailService:
     def fetch_ratings_credentials(self) -> tuple[str, str] | None:
         """Main entry point: connect, search for ratings email, extract credentials.
 
-        Returns:
-            tuple[str, str] | None: (password, link) if email found, None if not found
+        Searches all emails from today (or yesterday if use_yesterday=True) and
+        attempts to extract credentials from each until a valid link/password
+        combination is found.
 
-        Raises:
-            ExtractionError: If email is found but password or link extraction fails
+        Returns:
+            tuple[str, str] | None: (password, link) if found, None otherwise
         """
         if not self.connect():
             logger.error("Failed to connect to Gmail")
             return None
 
         try:
-            email_ids = self.search_emails(DATE_OF_DATA)
+            email_ids = self.search_emails()
 
             if not email_ids:
                 logger.info("Ratings email hasn't arrived yet")
                 return None
 
-            # There should only be one matching email
-            email_id = email_ids[0]
-            password, link = self.get_credentials(email_id)
+            for email_id in email_ids:
+                details = self.get_email_details(email_id)
+                body_text = details.get("body") or ""
 
-            logger.info(f"Password: {password}")
-            logger.info(f"Link: {link}")
+                password = self._extract_password_from_body(body_text)
+                link = self._extract_https_link_from_body(body_text)
 
-            return password, link
+                if password and link:
+                    logger.info(f"Password: {password}")
+                    logger.info(f"Link: {link}")
+                    return password, link
+
+                logger.warning(f"No link/password combination found in email: {details.get('subject', 'Unknown subject')}")
+
+            logger.info("No valid credentials found in any email")
+            return None
 
         finally:
             self.disconnect()

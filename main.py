@@ -1,11 +1,14 @@
 ﻿
 import os
+import sys
 
 from pandas.core.computation.common import result_type_many
 
 from services.ratings_file_service import RatingsFileService
 from services.download_service import RatingsDownloader
 from services.DailyRatingsReport import DailyRatingsReport
+from services.email_service import ExtractionError
+
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
@@ -62,19 +65,30 @@ async def test():
         print(cleaned["data"][:5])
 
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    # import uvicorn
+    # port = int(os.getenv("PORT", 8000))
+    # uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
 
 
     checkEmailService = current_config.get_credentials_service()
 
-    linkAndPass = checkEmailService.fetch_ratings_credentials()
-    password, link = linkAndPass
+    try:
 
-    fileDownloader = RatingsDownloader()
-    download = fileDownloader.download(password, link)
+        linkAndPass = checkEmailService.fetch_ratings_credentials()
+        if linkAndPass is None:
+            sys.exit(0)
+        password, link = linkAndPass
 
-    reportGenerator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name))
+        fileDownloader = RatingsDownloader()
+        download = fileDownloader.download(password, link)
+
+        reportGenerator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name))
+
+    except ExtractionError as e:
+        # Email was found, but password/link couldn't be extracted (real error condition)
+        print(f"Found email but couldn't extract credentials: {e}")
+        raise
+
+
 
 
