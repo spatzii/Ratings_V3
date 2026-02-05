@@ -39,6 +39,7 @@ class RaspberryConfig(Config):
     PROJECT_ROOT = Path(__file__).parent.parent
     DOWNLOAD_DIR = Path('/home/pi/ratings/downloads')
     SCHEMA = '/home/pi/ratings/core/mappings.json'
+    SLOTS_CONFIG = PROJECT_ROOT / 'core' / 'time_slots.json'
 
     @staticmethod
     def get_credentials_service(use_yesterday: bool = False):
