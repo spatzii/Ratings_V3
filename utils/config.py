@@ -37,7 +37,7 @@ class ProductionConfig(Config):
 class RaspberryConfig(Config):
     NAME = "Raspberry"
     PROJECT_ROOT = Path(__file__).parent.parent
-    DOWNLOAD_DIR = Path('/home/pi/ratings/downloads')
+    DOWNLOAD_DIR = Path('/home/panastefan/ratings/downloads')
     SCHEMA = '/home/panastefan/ratings/core/mappings.json'
     SLOTS_CONFIG = PROJECT_ROOT / 'core' / 'time_slots.json'
 
