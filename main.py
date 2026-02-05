@@ -4,7 +4,7 @@ import asyncio
 
 from services.ratings_file_service import RatingsFileService
 from services.download_service import RatingsDownloader
-from services.DailyRatingsReport import DailyRatingsReport
+from services.DailyRatingsReport_enhanced import DailyRatingsReport
 from services.email_service import ExtractionError
 
 
@@ -75,7 +75,8 @@ async def main():
         file_downloader = RatingsDownloader()
         download = file_downloader.download(password, link)
 
-        report_generator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name))
+        report_generator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name),
+                                              include_slot_averages=True)
         report = await report_generator.generate_report()
 
         # For email body

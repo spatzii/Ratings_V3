@@ -10,6 +10,7 @@ class DevelopmentConfig(Config):
     NAME = "Dev"
     PROJECT_ROOT = Path(__file__).parent.parent
     DOWNLOAD_DIR = Path("/Users/stefanpana/PycharmProjects/RatingsBackend")
+    SLOTS_CONFIG = PROJECT_ROOT / 'core' / 'time_slots.json'
 
     SCHEMA = '/Users/stefanpana/PycharmProjects/RatingsBackend/core/mappings.json'
 

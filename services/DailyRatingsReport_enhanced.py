@@ -4,34 +4,46 @@ import pandas as pd
 
 from utils.logger import get_logger as logger
 from services.ratings_file_service import RatingsFileService
+from services.slot_averages_calculator import SlotAveragesCalculator
+from utils.config import current_config
 
 logger = logger(__name__)
 
 
 class DailyRatingsReport:
-    """Generates daily ratings report with 15-minute averages and overall averages.
+    """Generates daily ratings report with 15-minute averages, slot averages, and overall averages.
 
     This service processes a saved ratings xlsx file and creates a formatted report
-    suitable for email delivery.
+    suitable for email delivery. Slot averages are automatically inserted based on
+    the day of the week.
     """
 
     RESAMPLE_INTERVAL = '15min'
     DECIMAL_PRECISION = 2
     REPORT_START_HOUR = 6  # 06:00
     REPORT_END_HOUR = 2  # 02:00 next day
-    ALL_DAY_HOUR = 2
 
-    def __init__(self, filepath: Path, channels: list[str] = None):
+    def __init__(self, filepath: Path, channels: list[str] = None, include_slot_averages: bool = True):
         """Initialize the daily report generator.
 
         Args:
             filepath: Path to the saved xlsx file
             channels: List of channel names to include in report.
                      Defaults to ['Digi 24', 'Antena 3 CNN']
+            include_slot_averages: Whether to include slot averages in the report.
+                                   Defaults to True.
         """
         self.filepath = filepath
         self.channels = channels or ['Digi 24', 'Antena 3 CNN']
+        self.include_slot_averages = include_slot_averages
         self._dataframe: pd.DataFrame | None = None
+        
+        # Initialize slot calculator if needed
+        if self.include_slot_averages:
+            slots_config_path = Path(current_config.PROJECT_ROOT) / 'core' / 'time_slots.json'
+            self.slot_calculator = SlotAveragesCalculator(slots_config_path)
+        else:
+            self.slot_calculator = None
 
     async def load_and_process(self) -> pd.DataFrame:
         """Load the xlsx file and process it into a pandas DataFrame.
@@ -128,7 +140,8 @@ class DailyRatingsReport:
         """Generate the complete daily ratings report.
 
         Returns:
-            DataFrame containing 15-minute intervals and overall average
+            DataFrame containing 15-minute intervals, slot averages (if enabled), 
+            and overall average
         """
         # Load data if not already loaded
         if self._dataframe is None:
@@ -137,14 +150,22 @@ class DailyRatingsReport:
         # Get broadcast window
         broadcast_window = self._get_broadcast_window()
 
-        # Calculate both types of averages
+        # Calculate interval and overall averages
         interval_averages = self._calculate_interval_averages(broadcast_window)
-        overall_average = self._calculate_overall_average()
+        overall_average = self._calculate_overall_average(broadcast_window)
+
+        # Insert slot averages if enabled
+        if self.include_slot_averages and self.slot_calculator:
+            logger.info("Inserting slot averages...")
+            interval_averages = self.slot_calculator.insert_slot_averages(
+                report_df=interval_averages,
+                original_df=self._dataframe
+            )
 
         # Combine into final report
         report = pd.concat([interval_averages, overall_average])
 
-        logger.info(f"Generated report with {len(interval_averages)} intervals + overall average")
+        logger.info(f"Generated report with {len(interval_averages)} rows + overall average")
         return report
 
     def to_html(self, report: pd.DataFrame) -> str:
@@ -172,13 +193,15 @@ class DailyRatingsReport:
 
 # Example usage
 async def main():
-    """Example of how to use the DailyRatingsReport class."""
+    """Example of how to use the enhanced DailyRatingsReport class."""
     file_path = Path(
         '/Users/stefanpana/PycharmProjects/RatingsBackend/Digi 24-audiente zilnice la minut 2026-01-30.xlsx')
 
+    # With slot averages (default)
     report_generator = DailyRatingsReport(
         filepath=file_path,
-        channels=['Digi 24', 'Antena 3 CNN']
+        channels=['Digi 24', 'Antena 3 CNN'],
+        include_slot_averages=True
     )
 
     report = await report_generator.generate_report()
@@ -186,9 +209,20 @@ async def main():
     # For email body
     html_report = report_generator.to_html(report)
     print(html_report)
+    
+    print("\n" + "="*80 + "\n")
+    
+    # Without slot averages
+    simple_generator = DailyRatingsReport(
+        filepath=file_path,
+        channels=['Digi 24', 'Antena 3 CNN'],
+        include_slot_averages=False
+    )
+    
+    simple_report = await simple_generator.generate_report()
+    print(simple_report.to_string())
 
 
 if __name__ == "__main__":
     import asyncio
-
     asyncio.run(main())
