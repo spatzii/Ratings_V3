@@ -19,6 +19,7 @@ class DailyRatingsReport:
     DECIMAL_PRECISION = 2
     REPORT_START_HOUR = 6  # 06:00
     REPORT_END_HOUR = 2  # 02:00 next day
+    ALL_DAY_HOUR = 2
 
     def __init__(self, filepath: Path, channels: list[str] = None):
         """Initialize the daily report generator.
@@ -90,7 +91,7 @@ class DailyRatingsReport:
         Returns:
             Single-row DataFrame with overall averages
         """
-        overall_avg = window.mean().round(self.DECIMAL_PRECISION)
+        overall_avg = self._dataframe.between_time('02:00', '01:59').mean().round(self.DECIMAL_PRECISION)
         overall_avg_df = pd.DataFrame(overall_avg).T
         overall_avg_df.index = ['Average']
         return overall_avg_df
