@@ -48,41 +48,49 @@ class SlotAveragesCalculator:
             return self.slots_config['friday']
         else:  # Saturday and Sunday (5-6)
             return self.slots_config['saturday_sunday']
-    
+
     def _calculate_slot_average(self, df: pd.DataFrame, slot: Dict, base_date: pd.Timestamp) -> pd.Series:
         """Calculate average for a single time slot.
-        
+
         Args:
             df: DataFrame with datetime index and channel columns
             slot: Dictionary with 'start_time', 'end_time', and optional 'next_day' flag
             base_date: The base date for the broadcast day
-            
+
         Returns:
             Series with average ratings for each channel in the slot
         """
         start_time = slot['start_time']
         end_time = slot['end_time']
-        
-        # Handle next-day slots (hours after midnight)
+
+        # Determine if slot crosses midnight (e.g., 23:00 - 01:00)
+        crosses_midnight = start_time > end_time
+
         if slot.get('next_day', False):
-            # For next-day slots, we need to shift the date forward
-            start_dt = pd.to_datetime(f"{base_date.date()} {start_time}") + timedelta(days=1)
-            end_dt = pd.to_datetime(f"{base_date.date()} {end_time}") + timedelta(days=1)
+            if crosses_midnight:
+                # Slot like 23:00 - 01:00: start is on base_date, end is on next day
+                start_dt = pd.to_datetime(f"{base_date.date()} {start_time}")
+                end_dt = pd.to_datetime(f"{base_date.date()} {end_time}") + timedelta(days=1)
+            else:
+                # Slot like 01:00 - 02:00: both times are on next day
+                start_dt = pd.to_datetime(f"{base_date.date()} {start_time}") + timedelta(days=1)
+                end_dt = pd.to_datetime(f"{base_date.date()} {end_time}") + timedelta(days=1)
+
+            # Filter data for this slot using datetime range (exclusive of end)
+            slot_data = df.loc[start_dt:end_dt - timedelta(minutes=1)]
         else:
-            start_dt = pd.to_datetime(f"{base_date.date()} {start_time}")
-            end_dt = pd.to_datetime(f"{base_date.date()} {end_time}")
-        
-        # Filter data for this slot
-        slot_data = df.loc[start_dt:end_dt]
-        
+            # Regular same-day slot - can use between_time for efficiency
+            slot_data = df.between_time(start_time, end_time, inclusive='left')
+
         if len(slot_data) == 0:
             logger.warning(f"No data found for slot {start_time} - {end_time}")
             return pd.Series(dtype=float)
-        
+
         # Calculate average
         return slot_data.mean().round(self.DECIMAL_PRECISION)
-    
-    def _format_slot_label(self, slot: Dict) -> str:
+
+    @staticmethod
+    def _format_slot_label(slot: Dict) -> str:
         """Create a readable label for the slot average row.
         
         Args:
@@ -91,7 +99,7 @@ class SlotAveragesCalculator:
         Returns:
             Formatted string like "Slot 06:00 - 07:00"
         """
-        return f"Slot {slot['start_time']} - {slot['end_time']}"
+        return f"MEDIE {slot['start_time']} - {slot['end_time']}"
     
     def insert_slot_averages(self, report_df: pd.DataFrame, original_df: pd.DataFrame) -> pd.DataFrame:
         """Insert slot average rows into the report at appropriate positions.
@@ -139,7 +147,8 @@ class SlotAveragesCalculator:
         
         return result_df
     
-    def _parse_interval_end_time(self, interval_label: str, base_date: pd.Timestamp) -> pd.Timestamp:
+    @staticmethod
+    def _parse_interval_end_time(interval_label: str, base_date: pd.Timestamp) -> pd.Timestamp:
         """Parse the end time from an interval label like '06:00 - 06:15'.
         
         Args:
@@ -158,7 +167,8 @@ class SlotAveragesCalculator:
             
         return end_dt
     
-    def _parse_slot_time(self, time_str: str, base_date: pd.Timestamp, is_next_day: bool = False) -> pd.Timestamp:
+    @staticmethod
+    def _parse_slot_time(time_str: str, base_date: pd.Timestamp, is_next_day: bool = False) -> pd.Timestamp:
         """Parse a slot time string into a Timestamp.
         
         Args:

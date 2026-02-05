@@ -4,7 +4,7 @@ import asyncio
 
 from services.ratings_file_service import RatingsFileService
 from services.download_service import RatingsDownloader
-from services.DailyRatingsReport_enhanced import DailyRatingsReport
+from services.DailyRatingsReport import DailyRatingsReport
 from services.email_service import ExtractionError
 
 
