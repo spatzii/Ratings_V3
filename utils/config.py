@@ -57,13 +57,16 @@ config = {
 
 def initialize_settings():
     """Initialize application settings and environment configuration."""
+    # Always load .env file first
+    load_dotenv()
+
+    # Get environment from ENV variable, default to development
     env = os.getenv('ENV', 'development')
 
-    # Load environment variables from .env file in development
-    if env in ['development', 'supabase']:
-        load_dotenv()
+    print(f"Loading configuration: {env}")  # Debug output
 
     return config.get(env, config['default'])
+
 
 # Create a settings instance that can be imported by other modules
 current_config = initialize_settings()
