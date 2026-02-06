@@ -7,8 +7,8 @@ Version information for TV Ratings Automation System.
 # MINOR version for new functionality in a backwards-compatible manner
 # PATCH version for backwards-compatible bug fixes
 
-__version__ = "1.0.0"
-__release_date__ = "2026-02-05"
+__version__ = "1.1.0"
+__release_date__ = "2026-02-06"
 __description__ = "TV Ratings Automation System"
 
 

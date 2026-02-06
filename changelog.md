@@ -5,3 +5,9 @@ and this project adheres to Semantic Versioning.
 
 [0.1.0] - 2026-01-27 
 - First release of the V3 project
+
+[1.0.0] - 2026-02-05
+- Deployed to Raspberry Pi, v1
+
+[1.1.0] - 2026-02-06
+- Added value highlighting in html tables
