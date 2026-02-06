@@ -17,7 +17,6 @@ import time
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from services.download_service import RatingsDownloader
 from services.DailyRatingsReport import DailyRatingsReport
 from services.email_service import ExtractionError
 from utils.config import current_config
@@ -74,7 +73,7 @@ async def attempt_download() -> Path | None:
     logger.info(f"✓ Found credentials - Password: {password}")
 
     # Download the file
-    downloader = RatingsDownloader()
+    downloader = current_config.get_downloader()
     filepath = downloader.download(password, link)
 
     if filepath is None:
