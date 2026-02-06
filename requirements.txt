@@ -5,3 +5,4 @@ openpyxl~=3.1.2   # Add version constraint
 python-multipart~=0.0.20  # Add version constraint
 python-dotenv~=1.2.1     # Current version
 requests~=2.32.3
+jinja2~=3.1.0
