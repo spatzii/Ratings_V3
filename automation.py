@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from services.DailyRatingsReport import DailyRatingsReport
+from services.daily_report_generator import DailyReportGenerator
 from services.email_service import ExtractionError
 from utils.config import current_config
 from utils.logger import get_logger
@@ -91,7 +91,7 @@ async def generate_and_send_report(filepath: Path) -> None:
     """
     logger.info("Generating ratings report...")
 
-    report_generator = DailyRatingsReport(
+    report_generator = DailyReportGenerator(
         filepath=filepath,
         channels=['Digi 24', 'Antena 3 CNN'],
         include_slot_averages=True

@@ -44,8 +44,8 @@ async def test_imports():
     modules = [
         ('services.email_service', 'EmailService'),
         ('services.download_service', 'RatingsDownloader'),
-        ('services.DailyRatingsReport', 'DailyRatingsReport'),
-        ('services.ratings_file_service', 'RatingsFileService'),
+        ('services.daily_report_generator', 'DailyReportGenerator'),
+        ('services.xlsx_parser', 'XlsxParser'),
         ('utils.config', 'current_config'),
         ('utils.logger', 'get_logger'),
     ]
@@ -183,7 +183,7 @@ async def test_file_structure():
         'core/time_slots.json',
         'services/email_service.py',
         'services/download_service.py',
-        'services/DailyRatingsReport.py',
+        'services/daily_report_generator.py',
         'utils/config.py',
         'utils/logger.py',
     ]

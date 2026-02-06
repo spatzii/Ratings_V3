@@ -187,14 +187,14 @@ class SlotAveragesCalculator:
 
 # Example usage and testing
 async def main():
-    """Example of how to use SlotAveragesCalculator with DailyRatingsReport."""
-    from services.DailyRatingsReport import DailyRatingsReport
-    
+    """Example of how to use SlotAveragesCalculator with DailyReportGenerator."""
+    from services.daily_report_generator import DailyReportGenerator
+
     file_path = Path('/Users/stefanpana/PycharmProjects/RatingsBackend/Digi 24-audiente zilnice la minut 2026-01-30.xlsx')
     slots_config = Path('/Users/stefanpana/PycharmProjects/RatingsBackend/core/time_slots.json')
-    
+
     # Generate the base report
-    report_generator = DailyRatingsReport(
+    report_generator = DailyReportGenerator(
         filepath=file_path,
         channels=['Digi 24', 'Antena 3 CNN']
     )

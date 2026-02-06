@@ -2,9 +2,9 @@
 import os
 import asyncio
 
-from services.ratings_file_service import RatingsFileService
+from services.xlsx_parser import XlsxParser
 from services.download_service import RatingsDownloader
-from services.DailyRatingsReport import DailyRatingsReport
+from services.daily_report_generator import DailyReportGenerator
 from services.email_service import ExtractionError
 
 
@@ -58,8 +58,8 @@ print(f"Project root: {current_config.PROJECT_ROOT}")
 async def test():
     test_file = Path("//Data/Ratings/Digi 24-audiente zilnice la minut 2026-01-26.xlsx")
     with open(test_file, "rb") as f:
-        service = RatingsFileService(f.read(), test_file.name)
-        cleaned = await service.process_ratings_file()
+        parser = XlsxParser(f.read(), test_file.name)
+        cleaned = await parser.process_ratings_file()
         print(cleaned["data"][:5])
 
 async def main():
@@ -75,8 +75,8 @@ async def main():
         file_downloader = RatingsDownloader()
         download = file_downloader.download(password, link)
 
-        report_generator = DailyRatingsReport(Path(current_config.DOWNLOAD_DIR / download.name),
-                                              include_slot_averages=True)
+        report_generator = DailyReportGenerator(Path(current_config.DOWNLOAD_DIR / download.name),
+                                               include_slot_averages=True)
         report = await report_generator.generate_report()
 
         # For email body
