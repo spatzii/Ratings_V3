@@ -1,0 +1,56 @@
+{
+  "scenarios": [
+    {
+      "name": "happy_path",
+      "description": "Normal successful run - email arrives with valid credentials",
+      "email": {
+        "email_found": true,
+        "password": "322791",
+        "link": "https://s.go.ro/abc123xyz"
+      },
+      "download": {
+        "success": true,
+        "file": "sample_ratings.xlsx"
+      },
+      "expected_outcome": "success"
+    },
+    {
+      "name": "email_not_arrived",
+      "description": "Email hasn't arrived yet (common before 10am)",
+      "email": {
+        "email_found": false
+      },
+      "expected_outcome": "retry_later"
+    },
+    {
+      "name": "missing_password",
+      "description": "Email found but password field is missing or malformed",
+      "email": {
+        "email_found": true,
+        "password": null,
+        "link": "https://s.go.ro/abc123xyz"
+      },
+      "expected_outcome": "extraction_failed"
+    },
+    {
+      "name": "missing_link",
+      "description": "Email found but download link is missing",
+      "email": {
+        "email_found": true,
+        "password": "322791",
+        "link": null
+      },
+      "expected_outcome": "extraction_failed"
+    },
+    {
+      "name": "delay_announced",
+      "description": "Email announces ratings will be late today",
+      "email": {
+        "email_found": true,
+        "delay_announced": true,
+        "delay_message": "Due to technical issues, ratings will be available after 14:00"
+      },
+      "expected_outcome": "retry_later"
+    }
+  ]
+}
