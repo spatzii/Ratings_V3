@@ -5,7 +5,7 @@ import asyncio
 from services.xlsx_parser import XlsxParser
 from services.download_service import RatingsDownloader
 from services.daily_report_generator import DailyReportGenerator
-from services.email_service import ExtractionError
+from services.email_service import fetch_ratings_credentials, send_report
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,31 +63,24 @@ async def test():
         print(cleaned["data"][:5])
 
 async def main():
-    email_service = current_config.get_credentials_service()
+    link_and_pass = fetch_ratings_credentials()
+    if link_and_pass is None:
+        return
 
-    try:
-        link_and_pass = email_service.fetch_ratings_credentials()
-        if link_and_pass is None:
-            return
+    password, link = link_and_pass
 
-        password, link = link_and_pass
+    file_downloader = RatingsDownloader()
+    download = file_downloader.download(password, link)
 
-        file_downloader = RatingsDownloader()
-        download = file_downloader.download(password, link)
+    report_generator = DailyReportGenerator(Path(current_config.DOWNLOAD_DIR / download.name),
+                                           include_slot_averages=True)
+    report = await report_generator.generate_report()
 
-        report_generator = DailyReportGenerator(Path(current_config.DOWNLOAD_DIR / download.name),
-                                               include_slot_averages=True)
-        report = await report_generator.generate_report()
+    # For email body
+    html_report = report_generator.to_html(report)
 
-        # For email body
-        html_report = report_generator.to_html(report)
-
-        email_service.send_report(html_report, "pana.stefan@gmail.com")
-        email_service.send_report(html_report, "citre.cristian@gmail.com")
-
-    except ExtractionError as e:
-        print(f"Found email but couldn't extract credentials: {e}")
-        raise
+    send_report(html_report, "pana.stefan@gmail.com")
+    send_report(html_report, "citre.cristian@gmail.com")
 
 
 if __name__ == "__main__":

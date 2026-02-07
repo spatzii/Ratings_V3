@@ -18,7 +18,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 from services.daily_report_generator import DailyReportGenerator
-from services.email_service import ExtractionError
+from services.email_service import fetch_ratings_credentials, send_report
 from utils.config import current_config
 from utils.logger import get_logger
 
@@ -56,14 +56,12 @@ async def attempt_download() -> Path | None:
         Path to downloaded file if successful, None if email not yet arrived
 
     Raises:
-        ExtractionError: If email found but credentials invalid
-        Exception: For other download failures
+        Exception: For download failures
     """
     # Try today's email first
     logger.info("Checking for today's ratings email...")
-    email_service = current_config.get_credentials_service(use_yesterday=False)
 
-    credentials = email_service.fetch_ratings_credentials()
+    credentials = fetch_ratings_credentials(use_yesterday=False)
 
     if credentials is None:
         logger.info("Today's email hasn't arrived yet")
@@ -103,10 +101,9 @@ async def generate_and_send_report(filepath: Path) -> None:
     logger.info("Sending reports to recipients...")
 
     # Send to all recipients
-    email_service = current_config.get_credentials_service()
     for recipient in REPORT_RECIPIENTS:
         try:
-            email_service.send_report(html_report, recipient)
+            send_report(html_report, recipient)
             logger.info(f"✓ Sent report to {recipient}")
         except Exception as e:
             logger.error(f"✗ Failed to send to {recipient}: {str(e)}")
@@ -148,10 +145,6 @@ async def main():
             else:
                 logger.error("Max retries reached. Email hasn't arrived.")
                 return 1
-
-        except ExtractionError as e:
-            logger.error(f"Credential extraction failed: {str(e)}")
-            return 2
 
         except Exception as e:
             logger.error(f"Unexpected error on attempt {attempt}: {str(e)}", exc_info=True)

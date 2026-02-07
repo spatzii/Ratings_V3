@@ -42,7 +42,7 @@ async def test_imports():
     print_test("Testing imports...")
     
     modules = [
-        ('services.email_service', 'EmailService'),
+        ('services.email_service', 'fetch_ratings_credentials'),
         ('services.download_service', 'RatingsDownloader'),
         ('services.daily_report_generator', 'DailyReportGenerator'),
         ('services.xlsx_parser', 'XlsxParser'),
@@ -116,18 +116,14 @@ async def test_email_connection():
     print_test("Testing Gmail connection...")
     
     try:
-        from services.email_service import EmailService
-        
-        email_service = EmailService(use_yesterday=False)
-        connected = email_service.connect()
-        
-        if connected:
-            print_success("Connected to Gmail successfully")
-            email_service.disconnect()
-            return True
-        else:
-            print_error("Failed to connect to Gmail")
-            return False
+        import imaplib
+        from services.email_service import IMAP_SERVER, IMAP_PORT, EMAIL_ADDRESS, EMAIL_PASSWORD
+
+        conn = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+        conn.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        print_success("Connected to Gmail successfully")
+        conn.logout()
+        return True
             
     except Exception as e:
         print_error(f"Email connection error: {str(e)}")
@@ -135,23 +131,16 @@ async def test_email_connection():
 
 
 async def test_credentials_service():
-    """Test credential fetching (won't actually fetch unless email exists)"""
+    """Test that email service functions are importable"""
     print_test("Testing credentials service...")
-    
+
     try:
-        from utils.config import current_config
-        
-        cred_service = current_config.get_credentials_service(use_yesterday=False)
-        print_success(f"Credentials service type: {type(cred_service).__name__}")
-        
-        # Don't actually fetch - just verify service exists
-        if hasattr(cred_service, 'fetch_ratings_credentials'):
-            print_success("Service has fetch_ratings_credentials method")
-            return True
-        else:
-            print_error("Service missing fetch_ratings_credentials method")
-            return False
-            
+        from services.email_service import fetch_ratings_credentials, send_report
+
+        print_success("fetch_ratings_credentials is importable")
+        print_success("send_report is importable")
+        return True
+
     except Exception as e:
         print_error(f"Credentials service error: {str(e)}")
         return False

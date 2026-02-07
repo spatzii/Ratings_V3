@@ -1,9 +1,17 @@
+"""
+Email utilities for TV Ratings Automation.
+
+Two responsibilities:
+  1. fetch_ratings_credentials() — connect to Gmail, find today's email, extract password + link
+  2. send_report() — send an HTML report via SMTP
+"""
+
 import imaplib
 import email
 import os
-import datetime
 import re
 import smtplib
+import datetime
 
 from email.header import decode_header
 from email.message import Message
@@ -16,10 +24,8 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Load environment variables
 load_dotenv()
 
-# ============ CONFIG ============
 IMAP_SERVER = "imap.gmail.com"
 IMAP_PORT = 993
 SMTP_SERVER = "smtp.gmail.com"
@@ -28,324 +34,147 @@ EMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
 EMAIL_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 
 
-class ExtractionError(Exception):
-    """Raised when password or link extraction fails."""
-    pass
+# ── Extraction helpers (private) ─────────────────────────────────────
+
+def _decode_payload(part: Message) -> str | None:
+    payload = part.get_payload(decode=True)
+    if not payload:
+        return None
+    charset = part.get_content_charset() or "utf-8"
+    try:
+        return payload.decode(charset, errors="replace")
+    except LookupError:
+        return payload.decode("utf-8", errors="replace")
 
 
-class EmailService:
-    """Service for connecting to Gmail and retrieving ratings emails."""
+def _extract_text_body(msg: Message) -> str:
+    def extract_parts(target_type: str) -> list[str]:
+        chunks = []
+        parts = msg.walk() if msg.is_multipart() else [msg]
+        for part in parts:
+            content_type = (part.get_content_type() or "").lower()
+            disposition = (part.get("Content-Disposition") or "").lower()
+            if "attachment" in disposition:
+                continue
+            if content_type == target_type:
+                decoded = _decode_payload(part)
+                if decoded:
+                    chunks.append(decoded)
+        return chunks
 
-    def __init__(self, use_yesterday: bool = False):
-        """Initialize EmailService.
+    text_chunks = extract_parts("text/plain")
+    body = "\n".join(c.strip() for c in text_chunks if c and c.strip())
 
-        Args:
-            use_yesterday: If True, search for yesterday's email instead of today's.
-                          Use this when running early in the day before new email arrives.
-        """
-        self.imap_server = IMAP_SERVER
-        self.imap_port = IMAP_PORT
-        self.email = EMAIL_ADDRESS
-        self.password = EMAIL_PASSWORD
-        self.connection = None
-        self.use_yesterday = use_yesterday
+    if not body:
+        html = "\n".join(extract_parts("text/html"))
+        if html:
+            body = re.sub(r"<[^>]+>", " ", html)
+            body = re.sub(r"\s+", " ", body).strip()
 
-        # Calculate search date based on use_yesterday flag
-        offset = 1 if use_yesterday else 0
-        search_date = datetime.datetime.today() - timedelta(days=offset)
+    return body
 
-        self.search_date = search_date.strftime("%d-%b-%Y")  # IMAP format, e.g. 28-Jan-2026
 
-        logger.info(f"EmailService initialized - searching for emails from {self.search_date}")
+def _extract_password(body: str) -> str | None:
+    if not body:
+        return None
+    match = re.search(r"(?im)^\s*password\s*:\s*([0-9]+)\s*$", body)
+    if match:
+        return match.group(1)
+    match = re.search(r"(?i)\bpassword\s*:\s*([0-9]+)\b", body)
+    return match.group(1) if match else None
 
-    def connect(self) -> bool:
-        """Establish connection to Gmail IMAP server."""
-        try:
-            self.connection = imaplib.IMAP4_SSL(self.imap_server, self.imap_port)
-            self.connection.login(self.email, self.password)
-            logger.info("✓ Connected to Gmail")
-            return True
-        except Exception as e:
-            logger.error(f"Connection failed: {str(e)}")
-            return False
 
-    def disconnect(self):
-        """Close the IMAP connection."""
-        if self.connection:
-            try:
-                self.connection.logout()
-            except:
-                pass
+def _extract_link(body: str) -> str | None:
+    if not body:
+        return None
+    match = re.search(r"https://[^\s<>()\"']+", body, flags=re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(0).rstrip(".,;:!?)\"]'")
 
-    @staticmethod
-    def _decode_payload(part: Message) -> str | None:
-        """Decode payload from an email part, handling charset issues."""
-        payload = part.get_payload(decode=True)
-        if not payload:
+
+# ── Public API ────────────────────────────────────────────────────────
+
+def fetch_ratings_credentials(use_yesterday: bool = False) -> tuple[str, str] | None:
+    """Connect to Gmail, search for today's ratings email, extract (password, link).
+
+    Args:
+        use_yesterday: Search yesterday's date instead of today's.
+
+    Returns:
+        (password, link) if found, None if email hasn't arrived yet.
+
+    Raises:
+        ConnectionError: If Gmail connection fails.
+    """
+    offset = 1 if use_yesterday else 0
+    search_date = (datetime.datetime.today() - timedelta(days=offset)).strftime("%d-%b-%Y")
+
+    logger.info(f"Searching for ratings email from {search_date}")
+
+    conn = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+    try:
+        conn.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        conn.select("INBOX")
+
+        status, message_ids = conn.search(None, "ON", search_date)
+        if status != "OK":
+            logger.error("IMAP search failed")
             return None
-        charset = part.get_content_charset() or "utf-8"
-        try:
-            return payload.decode(charset, errors="replace")
-        except LookupError:
-            return payload.decode("utf-8", errors="replace")
 
-    def _extract_text_body(self, msg: Message) -> str:
-        """Best-effort extraction of a readable text body from an email message."""
+        email_ids = message_ids[0].split()
+        if not email_ids:
+            logger.info("No emails found — ratings email hasn't arrived yet")
+            return None
 
-        def extract_parts(target_type: str) -> list[str]:
-            """Extract text chunks of a given content type from the message."""
-            chunks: list[str] = []
-            parts = msg.walk() if msg.is_multipart() else [msg]
+        logger.info(f"Found {len(email_ids)} email(s), scanning for credentials...")
 
-            for part in parts:
-                content_type = (part.get_content_type() or "").lower()
-                content_disposition = (part.get("Content-Disposition") or "").lower()
-
-                if "attachment" in content_disposition:
-                    continue
-
-                if content_type == target_type:
-                    decoded = self._decode_payload(part)
-                    if decoded:
-                        chunks.append(decoded)
-
-            return chunks
-
-        text_chunks = extract_parts("text/plain")
-        body_text = "\n".join(chunk.strip() for chunk in text_chunks if chunk and chunk.strip())
-
-        # If there's no text/plain part, fall back to a very rough HTML->text strip.
-        if not body_text:
-            html_chunks = extract_parts("text/html")
-            html = "\n".join(html_chunks)
-            if html:
-                body_text = re.sub(r"<[^>]+>", " ", html)
-                body_text = re.sub(r"\s+", " ", body_text).strip()
-
-        return body_text
-
-    def get_email_details(self, email_id: bytes) -> dict:
-        """Fetch basic details of an email.
-
-        Args:
-            email_id: Email ID from search results
-
-        Returns:
-            dict: Email details (subject, from, date, body)
-        """
-        try:
-            status, msg_data = self.connection.fetch(email_id, "(RFC822)")
-
+        for eid in email_ids:
+            status, msg_data = conn.fetch(eid, "(RFC822)")
             if status != "OK":
-                return {}
+                continue
 
-            # Parse the email
             msg = email.message_from_bytes(msg_data[0][1])
+            body = _extract_text_body(msg)
 
-            # Decode subject
-            subject = decode_header(msg["Subject"])[0][0]
-            if isinstance(subject, bytes):
-                subject = subject.decode(errors="replace")
+            password = _extract_password(body)
+            link = _extract_link(body)
 
-            # Get sender
-            from_addr = msg.get("From")
+            if password and link:
+                logger.info(f"Credentials found — password: {password}, link: {link}")
+                return password, link
 
-            # Get date
-            date = msg.get("Date")
+        logger.info("No valid credentials found in any email")
+        return None
 
-            body = self._extract_text_body(msg)
-
-            return {
-                "id": email_id.decode(),
-                "subject": subject,
-                "from": from_addr,
-                "date": date,
-                "body": body,
-            }
-
-        except Exception as e:
-            logger.error(f"Failed to fetch email details: {str(e)}")
-            return {}
-
-    @staticmethod
-    def _extract_password_from_body(body_text: str) -> str | None:
-        """
-        Extracts a password value from body text like: 'password: 322792'
-        Returns the first match or None.
-        """
-        if not body_text:
-            return None
-
-        match = re.search(r"(?im)^\s*password\s*:\s*([0-9]+)\s*$", body_text)
-        if match:
-            return match.group(1)
-
-        # Slightly more permissive fallback (in case it's not on its own line)
-        match = re.search(r"(?i)\bpassword\s*:\s*([0-9]+)\b", body_text)
-        return match.group(1) if match else None
-
-    @staticmethod
-    def _extract_https_link_from_body(body_text: str) -> str | None:
-        """Extract the first https:// link from body text (if present)."""
-        if not body_text:
-            return None
-
-        # Take the first https URL and stop at whitespace or common trailing punctuation.
-        match = re.search(r"https://[^\s<>()\"']+", body_text, flags=re.IGNORECASE)
-        if not match:
-            return None
-
-        url = match.group(0)
-        return url.rstrip(".,;:!?)\"]'")
-
-    def get_email_password(self, email_id: bytes) -> str | None:
-        """Fetch an email and extract the password from its body (if present)."""
-        details = self.get_email_details(email_id)
-        body_text = (details.get("body") or "")
-        return self._extract_password_from_body(body_text)
-
-    def get_email_link(self, email_id: bytes) -> str | None:
-        """Fetch an email and extract the first https link from its body (if present)."""
-        details = self.get_email_details(email_id)
-        body_text = (details.get("body") or "")
-        return self._extract_https_link_from_body(body_text)
-
-    def get_credentials(self, email_id: bytes) -> tuple[str, str]:
-        """Fetch an email and extract both password and link.
-
-        Args:
-            email_id: Email ID from search results
-
-        Returns:
-            tuple[str, str]: (password, link)
-
-        Raises:
-            ExtractionError: If password or link cannot be extracted
-        """
-        details = self.get_email_details(email_id)
-        body_text = details.get("body") or ""
-
-        password = self._extract_password_from_body(body_text)
-        if not password:
-            raise ExtractionError("Failed to extract password from email")
-
-        link = self._extract_https_link_from_body(body_text)
-        if not link:
-            raise ExtractionError("Failed to extract link from email")
-
-        return password, link
-
-    def search_emails(self) -> list[bytes]:
-        """Search for emails by date and return their IMAP IDs (bytes)."""
-        if not self.connection:
-            logger.error("Not connected. Call connect() first.")
-            return []
-
+    finally:
         try:
-            self.connection.select("INBOX")
-
-            status, message_ids = self.connection.search(
-                None,
-                "ON", self.search_date,
-            )
-
-            if status != "OK":
-                logger.error("Search failed")
-                return []
-
-            email_ids = message_ids[0].split()
-
-            if email_ids:
-                logger.info(f"Found {len(email_ids)} email(s) from {self.search_date}")
-            else:
-                logger.info(f"No emails found from {self.search_date}")
-
-            return email_ids
-
-        except Exception as e:
-            logger.error(f"Search failed: {str(e)}")
-            return []
-
-    def fetch_ratings_credentials(self) -> tuple[str, str] | None:
-        """Main entry point: connect, search for ratings email, extract credentials.
-
-        Searches all emails from today (or yesterday if use_yesterday=True) and
-        attempts to extract credentials from each until a valid link/password
-        combination is found.
-
-        Returns:
-            tuple[str, str] | None: (password, link) if found, None otherwise
-        """
-        if not self.connect():
-            logger.error("Failed to connect to Gmail")
-            return None
-
-        try:
-            email_ids = self.search_emails()
-
-            if not email_ids:
-                logger.info("Ratings email hasn't arrived yet")
-                return None
-
-            for email_id in email_ids:
-                details = self.get_email_details(email_id)
-                body_text = details.get("body") or ""
-
-                password = self._extract_password_from_body(body_text)
-                link = self._extract_https_link_from_body(body_text)
-
-                if password and link:
-                    logger.info(f"Password: {password}")
-                    logger.info(f"Link: {link}")
-                    return password, link
-
-                logger.warning(f"No link/password combination found in email: {details.get('subject', 'Unknown subject')}")
-
-            logger.info("No valid credentials found in any email")
-            return None
-
-        finally:
-            self.disconnect()
-
-    def send_report(self, report_html: str, recipient: str) -> None:
-        """Send an HTML report via email.
-
-        Args:
-            report_html: The HTML content of the report
-            recipient: The email address to send the report to
-        """
-        yesterday = datetime.datetime.today() - timedelta(days=1)
-        subject = f"Audiente {yesterday.strftime('%d.%m.%Y')}"
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = recipient
-
-        html_part = MIMEText(report_html, "html")
-        msg.attach(html_part)
-
-        try:
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                server.starttls()
-                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-                server.sendmail(EMAIL_ADDRESS, recipient, msg.as_string())
-
-            logger.info(f"Report sent to {recipient} with subject: {subject}")
-
-        except Exception as e:
-            logger.error(f"Failed to send report to {recipient}: {str(e)}")
+            conn.logout()
+        except Exception:
+            pass
 
 
-def main():
-    """Fetch ratings email credentials."""
-    email_service = EmailService()
-    credentials = email_service.fetch_ratings_credentials()
+def send_report(report_html: str, recipient: str) -> None:
+    """Send an HTML report email.
 
-    if credentials:
-        password, link = credentials
-        logger.info(f"Successfully retrieved credentials - Password: {password}, Link: {link}")
+    Args:
+        report_html: HTML content of the report.
+        recipient: Destination email address.
+    """
+    yesterday = datetime.datetime.today() - timedelta(days=1)
+    subject = f"Audiente {yesterday.strftime('%d.%m.%Y')}"
 
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_ADDRESS
+    msg["To"] = recipient
+    msg.attach(MIMEText(report_html, "html"))
 
-if __name__ == "__main__":
-    main()
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, recipient, msg.as_string())
+        logger.info(f"Report sent to {recipient}")
+    except Exception as e:
+        logger.error(f"Failed to send report to {recipient}: {e}")

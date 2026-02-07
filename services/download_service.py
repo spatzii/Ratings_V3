@@ -15,7 +15,7 @@ DOWNLOAD_DATE = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")  # e
 
 
 class RatingsDownloader:
-    """Downloads TV ratings files from Digi Storage using credentials from EmailService."""
+    """Downloads TV ratings files from Digi Storage using credentials from email_service."""
 
     def __init__(self, download_dir: Path = DOWNLOAD_DIR):
         """Initialize the downloader with target directories.
