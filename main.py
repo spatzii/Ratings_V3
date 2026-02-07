@@ -12,7 +12,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from pathlib import Path
-from api.v1.router import api_router
 
 from utils.config import current_config
 
@@ -47,8 +46,6 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600,
 )
-
-app.include_router(api_router, prefix="/api/v1")
 
 print("Debug Information:")
 print(f"ENV variable: {os.getenv('ENV')}")

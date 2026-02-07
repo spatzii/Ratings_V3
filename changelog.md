@@ -15,3 +15,6 @@ and this project adheres to Semantic Versioning.
 [1.2.0] - 2026-02-07
 - Refactored EmailService
 - Fixed html tables not displaying colors
+
+[1.2.1] - 2026-02-07
+- Fixed import bug (api)
