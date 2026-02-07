@@ -99,7 +99,7 @@ class SlotAveragesCalculator:
         Returns:
             Formatted string like "Slot 06:00 - 07:00"
         """
-        return f"MEDIE {slot['start_time']} - {slot['end_time']}"
+        return f"Medie {slot['start_time']} - {slot['end_time']}"
     
     def insert_slot_averages(self, report_df: pd.DataFrame, original_df: pd.DataFrame) -> pd.DataFrame:
         """Insert slot average rows into the report at appropriate positions.

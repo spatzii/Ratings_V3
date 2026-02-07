@@ -178,31 +178,79 @@ class DailyReportGenerator:
         logger.info(f"Generated report with {len(interval_averages)} rows + overall average")
         return report
 
+    # @staticmethod
+    # def to_html(report: pd.DataFrame) -> str:
+    #     """Convert report to HTML for email delivery.
+    #
+    #     Args:
+    #         report: The generated report DataFrame
+    #
+    #     Returns:
+    #         HTML string representation of the report
+    #     """
+    #
+    #     def highlight_max(row):
+    #         """Highlight the maximum value in each row."""
+    #         if row.name == 'Whole day':  # Skip highlighting the Whole day row
+    #             return [''] * len(row)
+    #         # For slot average rows (starting with "MEDIE"), also highlight
+    #         max_val = row.max()
+    #         return ['background-color: #90EE90' if v == max_val else ''
+    #                 for v in row]
+    #
+    #     styled = report.style.apply(highlight_max, axis=1)
+    #     styled = styled.format(precision=2)
+    #
+    #     return styled.to_html()
+
     @staticmethod
     def to_html(report: pd.DataFrame) -> str:
-        """Convert report to HTML for email delivery.
+        """Convert report to HTML with inline styles for email compatibility."""
 
-        Args:
-            report: The generated report DataFrame
+        # Start HTML table with inline styles
+        html = ['<table style="border-collapse: collapse; font-family: Arial, sans-serif; width: 100%;">',
+                '<thead><tr>',
+                '<th style="background-color: #4472C4; color: white; padding: 10px; border: 1px solid #ddd;">Time</th>']
 
-        Returns:
-            HTML string representation of the report
-        """
+        # Header row
+        for col in report.columns:
+            html.append(
+                f'<th style="background-color: #4472C4; color: white; padding: 10px; border: 1px solid #ddd;">{col}</th>')
+        html.append('</tr></thead>')
 
-        def highlight_max(row):
-            """Highlight the maximum value in each row."""
-            if row.name == 'Whole day':  # Skip highlighting the Whole day row
-                return [''] * len(row)
-            # For slot average rows (starting with "MEDIE"), also highlight
-            max_val = row.max()
-            return ['background-color: #90EE90' if v == max_val else ''
-                    for v in row]
+        # Data rows
+        html.append('<tbody>')
+        for idx, row in report.iterrows():
+            html.append('<tr>')
 
-        styled = report.style.apply(highlight_max, axis=1)
-        styled = styled.format(precision=2)
+            # Row label cell
+            label_style = 'padding: 8px; border: 1px solid #ddd; font-weight: bold;'
+            if str(idx).startswith('MEDIE'):
+                label_style += ' background-color: #D9E1F2;'  # Light blue - more visible
+            html.append(f'<td style="{label_style}">{idx}</td>')
 
-        return styled.to_html()
+            # Find max value for highlighting (skip certain rows)
+            skip_highlight = idx == 'Whole day' or str(idx).startswith('MEDIE')
+            max_val = row.max() if not skip_highlight else None
 
+            # Data cells
+            for val in row:
+                cell_style = 'padding: 8px; text-align: center; border: 1px solid #ddd;'
+
+                # Highlight max value in green
+                if max_val is not None and val == max_val:
+                    cell_style += ' background-color: #90EE90; font-weight: bold;'
+                # MEDIE rows in light blue
+                elif str(idx).startswith('MEDIE'):
+                    cell_style += ' background-color: #D9E1F2; font-style: italic;'
+
+                html.append(f'<td style="{cell_style}">{val:.2f}</td>')
+
+            html.append('</tr>')
+        html.append('</tbody>')
+        html.append('</table>')
+
+        return ''.join(html)
     @staticmethod
     def to_string(report: pd.DataFrame) -> str:
         """Convert report to plain text string.
